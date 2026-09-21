@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Live 3D tracker for every active satellite in orbit, styled as a 1980s orbital surveillance terminal." />
+    <title>OrbitWatch</title>
+  </head>
+  <body data-vis="phosphor">
+    <div id="app">
+      <!-- ============ STATUS BAR ============ -->
+      <header class="statusbar">
+        <span class="brand">▓▒░ ORBITWATCH</span>
+        <span class="dim hide-sm">ORBITAL SURVEILLANCE TERMINAL // MK-II</span>
+        <span class="sb-item hide-sm">LINK <b id="sb-link" class="blink-slow">■ ACQUIRING</b></span>
+        <span class="sb-item hide-sm">SESSION <b id="sb-uptime">00:00:00</b></span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item"><b id="utc">----.--.-- --:--:--</b> UTC</span>
+        <span id="live-badge" class="badge">● LIVE</span>
+      </header>
+
+      <!-- ============ LEFT: SYSTEMS ============ -->
+      <aside class="col left">
+        <section class="mod">
+          <h2><span>SYS.PERF</span><i>01</i></h2>
+          <div class="row"><label>FRAME RATE</label><b id="m-fps">--</b></div>
+          <div class="bar" id="b-fps"></div>
+          <div class="row"><label>FRAME TIME</label><b id="m-ft">--</b></div>
+          <div class="bar" id="b-ft"></div>
+          <div class="row"><label>SGP4 SOLUTIONS</label><b id="m-prop">--</b></div>
+          <div class="bar" id="b-prop"></div>
+          <div class="row"><label>JS HEAP</label><b id="m-heap">--</b></div>
+          <div class="bar" id="b-heap"></div>
+        </section>
+
+        <section class="mod">
+          <h2><span>ORBITAL CENSUS</span><i>02</i></h2>
+          <div id="census"></div>
+          <div class="row"><label>SUNLIT</label><b id="m-sunlit">--</b></div>
+          <div class="bar" id="b-sunlit"></div>
+          <div class="row"><label>IN VIEWPORT</label><b id="m-inview">--</b></div>
+        </section>
+
+        <section class="mod">
+          <h2><span>LAYER FILTER</span><i>03</i></h2>
+          <ul id="legend" class="legend"></ul>
+        </section>
+
+        <section class="mod search">
+          <h2><span>TARGET ACQUISITION</span><i>04</i></h2>
+          <div class="prompt"><span>&gt;</span><input id="search" type="search" placeholder="NAME OR NORAD ID" autocomplete="off" spellcheck="false" disabled /></div>
+          <ul id="results"></ul>
+          <div class="btn-row" id="quick">
+            <button data-norad="25544">ISS</button>
+            <button data-norad="20580">HUBBLE</button>
+            <button data-norad="48274">TIANGONG</button>
+          </div>
+        </section>
+
+        <section class="mod">
+          <h2><span>DATA LINKS</span><i>05</i></h2>
+          <div class="row"><label>CELESTRAK</label><b id="l-celestrak">--</b></div>
+          <div class="row"><label>SATCAT</label><b id="l-satcat">--</b></div>
+          <div class="row"><label>WIKIDATA</label><b id="l-wikidata">--</b></div>
+          <div class="row"><label>WIKIPEDIA</label><b id="l-wikipedia">--</b></div>
+          <div class="row"><label>NASA GIBS</label><b id="l-gibs">--</b></div>
+          <div class="bar" id="b-gibs"></div>
+          <div class="row"><label>NASA 3D MODELS</label><b id="l-models">--</b></div>
+          <div class="bar" id="b-models"></div>
+        </section>
+      </aside>
+
+      <!-- ============ CENTRE: VIEWPORT ============ -->
+      <main class="viewport">
+        <div id="globe"></div>
+        <div class="bezel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="crosshair" aria-hidden="true"></div>
+        <div class="hud tl">
+          <div>CAM ALT <b id="h-alt">--</b></div>
+          <div>MODE <b id="h-mode">ORBIT</b></div>
+        </div>
+        <div class="hud tr">
+          <span>VISUAL</span>
+          <div class="seg" id="vis-toggle">
+            <button data-vis="phosphor" class="active">PHOSPHOR</button>
+            <button data-vis="true">TRUE COLOUR</button>
+          </div>
+        </div>
+        <div class="hud bl">CURSOR <b id="h-cursor">--</b></div>
+        <div class="hud br">GRID 15° · <b id="h-tiles">--</b></div>
+      </main>
+
+      <!-- ============ RIGHT: TARGET ============ -->
+      <aside class="col right">
+        <section class="mod standby" id="standby">
+          <h2><span>TARGET DOSSIER</span><i>06</i></h2>
+          <pre class="radar" id="radar"></pre>
+          <p class="blink-slow">NO TARGET LOCKED</p>
+          <p class="dim">SELECT AN OBJECT IN THE VIEWPORT OR USE TARGET ACQUISITION.</p>
+        </section>
+
+        <section class="mod dossier" id="details" hidden>
+          <h2><span class="lock"><span class="blink"></span>TARGET LOCKED</span><button class="close" id="close-details" title="Release target (Esc)">[X]</button></h2>
+          <div class="kicker" id="d-category"></div>
+          <h3 id="d-name"></h3>
+          <div class="ids" id="d-ids"></div>
+
+          <figure class="dz-image" id="d-figure" hidden>
+            <img id="d-img" alt="" />
+            <figcaption id="d-img-cap">IMG · WIKIMEDIA COMMONS</figcaption>
+          </figure>
+
+          <h4>IDENTIFICATION</h4>
+          <dl class="kv">
+            <dt>OWNER</dt><dd id="d-owner" class="loading"></dd>
+            <dt>TYPE</dt><dd id="d-type" class="loading"></dd>
+            <dt>STATUS</dt><dd id="d-status" class="loading"></dd>
+            <dt>LAUNCHED</dt><dd id="d-launch" class="loading"></dd>
+            <dt>SITE</dt><dd id="d-site" class="loading"></dd>
+            <dt>RADAR X-SEC</dt><dd id="d-rcs" class="loading"></dd>
+            <dt>3D MODEL</dt><dd id="d-model"></dd>
+          </dl>
+
+          <h4>LIVE TELEMETRY <em class="illum" id="d-illum"></em></h4>
+          <dl class="stats">
+            <div><dt>ALTITUDE</dt><dd id="d-alt"></dd></div>
+            <div><dt>VELOCITY</dt><dd id="d-speed"></dd></div>
+            <div><dt>LATITUDE</dt><dd id="d-lat"></dd></div>
+            <div><dt>LONGITUDE</dt><dd id="d-lon"></dd></div>
+            <div><dt>APOGEE</dt><dd id="d-apo"></dd></div>
+            <div><dt>PERIGEE</dt><dd id="d-peri"></dd></div>
+            <div><dt>PERIOD</dt><dd id="d-period"></dd></div>
+            <div><dt>INCLINATION</dt><dd id="d-inc"></dd></div>
+          </dl>
+          <div class="row"><label>ORBIT PROGRESS</label><b id="d-phase">--</b></div>
+          <div class="bar" id="b-phase"></div>
+          <div class="regime" id="d-regime"></div>
+
+          <h4 id="d-about-title">BRIEFING</h4>
+          <p class="about loading" id="d-about"></p>
+          <a class="wiki-link" id="d-wiki" target="_blank" rel="noopener" hidden></a>
+
+          <button class="release" id="release">[ RELEASE TARGET ]</button>
+        </section>
+      </aside>
+
+      <!-- ============ BOTTOM: LOG + CHRONO ============ -->
+      <footer class="bottom">
+        <section class="mod log">
+          <h2><span>EVENT LOG</span><i>07</i></h2>
+          <ol id="log"></ol>
+        </section>
+
+        <section class="mod chrono">
+          <h2><span>CHRONO CONTROL</span><i>08</i></h2>
+          <div class="big" id="sim-time">--:--:--</div>
+          <div class="row"><label>SIM DATE</label><b id="sim-date">--</b></div>
+          <div class="row"><label>OFFSET FROM NOW</label><b id="sim-offset">+00:00:00</b></div>
+          <div class="btn-row speeds" id="speeds">
+            <button data-speed="0" title="Pause">▌▌</button>
+            <button data-speed="1" class="active">1×</button>
+            <button data-speed="10">10×</button>
+            <button data-speed="100">100×</button>
+            <button data-speed="1000">1K×</button>
+            <button id="now-btn" title="Jump back to the current time">NOW</button>
+          </div>
+        </section>
+
+        <section class="mod graphs">
+          <h2><span>TRENDS · 60 S</span><i>09</i></h2>
+          <div class="row"><label>FRAME RATE</label><b id="g-fps-v">--</b></div>
+          <pre class="spark" id="g-fps"></pre>
+          <div class="row"><label>SGP4 / S</label><b id="g-prop-v">--</b></div>
+          <pre class="spark" id="g-prop"></pre>
+          <div class="row"><label>OBJECTS IN VIEW</label><b id="g-view-v">--</b></div>
+          <pre class="spark" id="g-view"></pre>
+        </section>
+      </footer>
+    </div>
+
+    <div class="crt" aria-hidden="true"></div>
+    <div id="tooltip" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
