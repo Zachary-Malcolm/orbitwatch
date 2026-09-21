@@ -29,6 +29,15 @@ export interface Coverage {
   earthFraction: number;
 }
 
+/**
+ * Angular radius (from the Earth's centre, radians) of the region that sees a satellite at
+ * `rEarthRadii` from the centre at least `elevDeg` above the horizon: λ = acos(cos ε / r) − ε.
+ */
+export function coverageAngle(rEarthRadii: number, elevDeg: number): number {
+  const e = THREE.MathUtils.degToRad(elevDeg);
+  return Math.max(0, Math.acos(Math.min(1, Math.cos(e) / rEarthRadii)) - e);
+}
+
 export class GroundTrack {
   readonly group = new THREE.Group();
   showTrack = true;
@@ -148,13 +157,7 @@ export class GroundTrack {
     this.earth.worldToLocal(c);
     const r = c.length(); // Earth radii
     c.divideScalar(r);
-    // Angular radius (from the Earth's centre) of the region seeing the satellite at elevation ≥ ε:
-    // λ = acos(cos ε / r) − ε.
-    const reach = (elevDeg: number) => {
-      const e = THREE.MathUtils.degToRad(elevDeg);
-      return Math.max(0, Math.acos(Math.min(1, Math.cos(e) / r)) - e);
-    };
-    const horizon = reach(0);
+    const horizon = coverageAngle(r, 0);
 
     // Two unit vectors perpendicular to the sub-satellite direction span the ring's plane.
     this.u.set(0, 1, 0).cross(c);
@@ -175,7 +178,7 @@ export class GroundTrack {
     };
     if (this.showFootprint) {
       this.setLine(this.horizonRing, ring(horizon));
-      this.setLine(this.elevationRing, ring(reach(MIN_ELEVATION_DEG)));
+      this.setLine(this.elevationRing, ring(coverageAngle(r, MIN_ELEVATION_DEG)));
     }
     return { horizonRadiusKm: horizon * EARTH_RADIUS_KM, earthFraction: (1 - Math.cos(horizon)) / 2 };
   }

@@ -29,6 +29,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Never publish a build whose maths tests fail.
+      - run: npm test
       # Mirror CelesTrak's active catalogue into the site, so visitors never hit CelesTrak's
       # per-IP download limit. If CelesTrak is unavailable the site falls back to fetching
       # it directly in the browser.

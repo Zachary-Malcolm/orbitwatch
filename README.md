@@ -1,5 +1,7 @@
 # OrbitWatch — live satellite tracker
 
+[![CI](https://github.com/Zachary-Malcolm/orbitwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/Zachary-Malcolm/orbitwatch/actions/workflows/ci.yml)
+
 **▶ Live: [zachary-malcolm.github.io/orbitwatch](https://zachary-malcolm.github.io/orbitwatch/)** · try the ISS: [#norad=25544](https://zachary-malcolm.github.io/orbitwatch/#norad=25544)
 
 A real-time 3D globe showing every active satellite in orbit (~16,000 objects) plus ~2,700 debris fragments, computed in
@@ -59,7 +61,9 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
 
 ```bash
 npm install
-npm run dev
+npm run dev        # development server
+npm test           # unit tests (Vitest)
+npm run typecheck  # TypeScript check
 ```
 
 The README screenshots and GIF are generated from the live site by `npm run capture`, which drives a locally installed
@@ -81,11 +85,13 @@ Chrome through Playwright (see `scripts/capture-readme.mjs`).
 | `src/observer.ts` | Observer station, look angles, pass prediction and visibility, globe marker and beam |
 | `src/news.ts` | Latest headlines and per-object news search (Spaceflight News API) |
 | `src/conjunctions.ts` | Splits close-approach screening across parallel workers and merges the results |
-| `src/conjunctionWorker.ts` | The screening itself: grid sieve, linear closest-approach test, SGP4 refinement |
+| `src/screening.ts` | The screening itself: grid sieve, linear closest-approach test, SGP4 refinement |
+| `src/conjunctionWorker.ts` | Runs the screening in a Web Worker, off the main thread |
 | `src/satellites.ts` | Satellite point cloud, propagation, screen-space picking, orbit paths |
 | `src/main.ts` | Simulated clock, gauges, search, dossier, camera flights and tracking |
 | `src/terminal.ts` | Text-mode widgets: block bars, sparklines, event log, radar sweep |
 | `src/telemetry.ts` | Event log bus and timed fetches for link latency |
+| `test/` | Unit tests for the orbital maths (see Testing below) |
 
 **Coordinate frame.** The scene is Earth-centred inertial (ECI), the frame SGP4 outputs. Instead of converting
 every satellite to Earth-fixed coordinates each frame, the Earth mesh is rotated by sidereal time.
@@ -128,6 +134,30 @@ under 100 m/s relative speed (docked vehicles, formation flyers) are dropped, an
 constellation are skipped by default: Starlink members are kept in a separate list per cell and never compared
 with each other, which removes most of the work. The window is split into time slices screened in parallel.
 Public TLEs are accurate to roughly a kilometre, so miss distances are indicative rather than operational.
+
+## Testing
+
+The maths is covered by [Vitest](https://vitest.dev) unit tests in `test/`, run by GitHub Actions on every push
+(the deploy also refuses to publish if they fail). Where possible each result is checked against an independent
+answer rather than against itself:
+
+- **SGP4**: satellite.js reproduces Vallado's published verification states ("Revisiting Spacetrack Report #3")
+  to the millimetre, and a real ISS element set gives a physically sensible orbit (altitude, speed, period,
+  highest latitude equal to the inclination)
+- **Pass prediction**: a day of ISS passes over Greenwich agrees with a brute-force scan of the elevation every
+  second (rise and set within a second, peak never lower); rise and set sit on the horizon; geostationary
+  satellites are reported as always or never visible
+- **Sun**: midsummer Sun elevation over Greenwich at noon and midnight
+- **Footprint**: the ISS's ~2,250 km horizon radius and a geostationary satellite's ~42% of the Earth, plus a
+  vector check that the satellite really sits at the requested elevation from the edge of each ring
+- **Close-approach screening**: a tiny synthetic catalogue with one crossing pair (time and distance of closest
+  approach match a 50 ms brute-force search), a formation pair that must be ignored, constellation skipping
+  and the distance threshold
+- **Imagery tiles**: the quadtree tiles exactly, every point of a tile lies inside the cone used to cull it, and
+  the texel-size estimate that drives the level of detail is within 1%
+
+Each test was also checked against deliberately broken code (weakened searches, a removed filter) to confirm it
+fails when it should.
 
 ## Credits
 

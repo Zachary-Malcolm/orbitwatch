@@ -13,10 +13,16 @@ amber-phosphor surveillance terminal. Vite + TypeScript + Three.js + satellite.j
 ```bash
 npm run dev       # dev server (the app fetches CelesTrak directly in dev)
 npm run build     # tsc + vite build (production base path is /orbitwatch/)
+npm test          # Vitest unit tests for the maths (test/), ~1 s
+npm run typecheck # tsc --noEmit (includes the tests)
 npm run capture   # regenerate README media in docs/media from the live site (drives local Chrome)
 ```
 
-`npx tsc --noEmit` is the quick check. There are **no tests yet** (see next steps).
+GitHub Actions runs typecheck + tests on every push (`.github/workflows/ci.yml`), and the deploy workflow
+won't publish if tests fail. Tests compare against independent answers (published reference values or a
+brute-force search), not against the code's own output; keep it that way. Maths is kept in plain exported
+functions so it can be tested without a browser (e.g. `screen()` in `src/screening.ts`, which
+`conjunctionWorker.ts` just wraps; `coverageAngle()`, `tileBounds()`, `parseTle()`).
 
 ## Deploy
 
@@ -57,9 +63,7 @@ in the browser's Cache API for 2 hours.
 
 ## Next steps (agreed priority)
 
-1. **Tests + CI:** Vitest unit tests for the maths (SGP4 positions vs known ISS values, pass prediction,
-   footprint radius, screening on a tiny synthetic catalogue, tile quadtree), a GitHub Action running
-   `tsc` + tests on every push, and a README badge.
+1. ~~Tests + CI~~ (done 2026-09-21: 39 tests, CI workflow, README badge and Testing section).
 2. **Split `main.ts`** into modules (camera, dossier, gauges, observer/passes, conjunction UI, news, links).
 3. **Lighter on phones:** run close-approach screening only when the APPROACHES tab is opened (or on idle),
    use fewer workers on mobile, and consider fewer imagery tiles.

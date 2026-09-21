@@ -112,7 +112,8 @@ async function loadCelestrak(group: string): Promise<TleText> {
   }
 }
 
-function parseTle(text: string, category?: Category): SatInfo[] {
+/** Parse three-line TLE text (name, line 1, line 2); unparseable entries are skipped. */
+export function parseTle(text: string, category?: Category): SatInfo[] {
   const lines = text.split(/\r?\n/).map((l) => l.trimEnd());
   const sats: SatInfo[] = [];
   for (let i = 0; i < lines.length - 2; i++) {

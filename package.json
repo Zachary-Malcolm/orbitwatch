@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "capture": "node scripts/capture-readme.mjs"
   },
   "devDependencies": {
@@ -15,7 +17,8 @@
     "playwright-core": "^1.63.0",
     "pngjs": "^7.0.0",
     "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
   },
   "dependencies": {
     "satellite.js": "^7.1.0",

@@ -43,11 +43,30 @@ export function latLonToVec(lat: number, lon: number, out = new THREE.Vector3())
   return out.set(cl * Math.cos(lon), Math.sin(lat), -cl * Math.sin(lon));
 }
 
-function tileLatLon(z: number, x: number, y: number, u: number, v: number): [number, number] {
+/** Latitude and longitude (radians) of the point (u, v) ∈ [0, 1]² inside Web-Mercator tile z/x/y. */
+export function tileLatLon(z: number, x: number, y: number, u: number, v: number): [number, number] {
   const n = 2 ** z;
   const lon = ((x + u) / n) * 2 * Math.PI - Math.PI;
   const lat = Math.atan(Math.sinh(Math.PI * (1 - (2 * (y + v)) / n)));
   return [lat, lon];
+}
+
+/**
+ * A tile's centre on the unit sphere, the angle from the centre to its farthest edge (so a cone
+ * of that angle contains the whole tile, which is what the horizon and frustum culling rely on),
+ * and the width of one texel at the centre in Earth radii (which drives the split decision).
+ */
+export function tileBounds(z: number, x: number, y: number) {
+  const [latC, lonC] = tileLatLon(z, x, y, 0.5, 0.5);
+  const center = latLonToVec(latC, lonC);
+  let angRadius = 0;
+  const p = new THREE.Vector3();
+  for (const [u, v] of [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]) {
+    const [lat, lon] = tileLatLon(z, x, y, u, v);
+    angRadius = Math.max(angRadius, center.angleTo(latLonToVec(lat, lon, p)));
+  }
+  const texelWorld = ((2 * Math.PI) / 2 ** z / TILE_PX) * Math.cos(latC);
+  return { center, angRadius, texelWorld };
 }
 
 export class EarthTiles {
@@ -170,16 +189,7 @@ export class EarthTiles {
     const key = `${z}/${x}/${y}`;
     let t = this.tiles.get(key);
     if (!t) {
-      const [latC, lonC] = tileLatLon(z, x, y, 0.5, 0.5);
-      const center = latLonToVec(latC, lonC);
-      let angRadius = 0;
-      const p = new THREE.Vector3();
-      for (const [u, v] of [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]) {
-        const [lat, lon] = tileLatLon(z, x, y, u, v);
-        angRadius = Math.max(angRadius, center.angleTo(latLonToVec(lat, lon, p)));
-      }
-      const texelWorld = ((2 * Math.PI) / 2 ** z / TILE_PX) * Math.cos(latC);
-      t = { key, z, x, y, center, angRadius, texelWorld, state: 'idle', mesh: null, lastUsed: 0 };
+      t = { key, z, x, y, ...tileBounds(z, x, y), state: 'idle', mesh: null, lastUsed: 0 };
       this.tiles.set(key, t);
     }
     return t;
