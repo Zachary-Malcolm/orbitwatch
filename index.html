@@ -86,6 +86,11 @@
             <button data-vis="phosphor" class="active">PHOSPHOR</button>
             <button data-vis="true">TRUE COLOUR</button>
           </div>
+          <span>OVERLAY</span>
+          <div class="seg" id="overlay-toggle">
+            <button data-overlay="track" class="active" title="Ground track: the path traced on the ground directly beneath the target">TRACK</button>
+            <button data-overlay="footprint" class="active" title="Footprint: everywhere the target is above the horizon (outer) or 10° up (inner)">FOOTPRINT</button>
+          </div>
         </div>
         <div class="hud bl">CURSOR <b id="h-cursor">--</b></div>
         <div class="hud br">GRID 15° · <b id="h-tiles">--</b></div>
@@ -154,6 +159,8 @@
             <div><dt>PERIGEE</dt><dd id="d-peri"></dd></div>
             <div><dt>PERIOD</dt><dd id="d-period"></dd></div>
             <div><dt>INCLINATION</dt><dd id="d-inc"></dd></div>
+            <div><dt>FOOTPRINT RADIUS</dt><dd id="d-foot"></dd></div>
+            <div><dt>EARTH COVERED</dt><dd id="d-cover"></dd></div>
           </dl>
           <div class="row"><label>ORBIT PROGRESS</label><b id="d-phase">--</b></div>
           <div class="bar" id="b-phase"></div>

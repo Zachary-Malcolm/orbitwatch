@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GlobeScene, type VisualMode } from './scene';
 import { CATEGORIES, SatelliteLayer } from './satellites';
 import { ModelLayer } from './models';
+import { GroundTrack, type Coverage } from './groundTrack';
 import { NASA_MODEL_NAMES } from './nasaModels';
 import { fetchIntel, type CatalogInfo, type WikiInfo } from './intel';
 import { loadDebris, loadSatellites, type Category, type SatInfo } from './tle';
@@ -17,6 +18,8 @@ log('SYSTEM', 'ORBITWATCH MK-II TERMINAL ONLINE', 'ok');
 
 const globe = new GlobeScene($('globe'));
 const models = new ModelLayer(globe.scene);
+const groundTrack = new GroundTrack(globe.earth);
+let coverage: Coverage | null = null;
 let layer: SatelliteLayer | null = null;
 const bootTime = performance.now();
 log('RENDER', `WEBGL${globe.renderer.capabilities.isWebGL2 ? '2' : '1'} CONTEXT · MAX TEX ${globe.renderer.capabilities.maxTextureSize}`);
@@ -179,6 +182,7 @@ function select(index: number, keepEncounter = false) {
   if (index >= 0) showTab('target');
   else showTab(tab);
   lastSunlit = null;
+  groundTrack.setTarget(index >= 0 ? layer.sats[index].satrec : null, index >= 0 ? CATEGORIES[layer.sats[index].category].color : undefined);
   if (index < 0) {
     if (previous >= 0) log('TRACK', `TARGET RELEASED · ${layer.sats[previous].name}`);
     if (mode !== 'earth') beginFlight('to-earth');
@@ -575,6 +579,8 @@ function updateDetails() {
   set('d-peri', `${fmt(d.perigeeKm, 0)} KM`);
   set('d-period', d.periodMin < 180 ? `${fmt(d.periodMin, 1)} MIN` : `${fmt(d.periodMin / 60, 2)} H`);
   set('d-inc', `${fmt(d.inclinationDeg, 1)}°`);
+  set('d-foot', coverage ? `${fmt(coverage.horizonRadiusKm, 0)} KM` : '--');
+  set('d-cover', coverage ? `${fmt(coverage.earthFraction * 100, coverage.earthFraction < 0.1 ? 2 : 1)}%` : '--');
   set('d-phase', `${fmt(d.orbitPhase * 100, 0)}% PERIGEE→PERIGEE`);
   blocks($('b-phase'), d.orbitPhase, false, 24);
   const stale = d.tleAgeDays > 7;
@@ -609,6 +615,17 @@ function setVisualMode(next: VisualMode) {
   });
   log('DISPLAY', `VISUAL MODE · ${next === 'phosphor' ? 'PHOSPHOR' : 'TRUE COLOUR'}`);
 }
+
+$('overlay-toggle').addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button');
+  const which = btn?.dataset.overlay;
+  if (!btn || !which) return;
+  const on = !btn.classList.contains('active');
+  btn.classList.toggle('active', on);
+  if (which === 'track') groundTrack.showTrack = on;
+  else groundTrack.showFootprint = on;
+  log('DISPLAY', `${which === 'track' ? 'GROUND TRACK' : 'COVERAGE FOOTPRINT'} · ${on ? 'ON' : 'OFF'}`);
+});
 
 $('vis-toggle').addEventListener('click', (e) => {
   const vis = (e.target as HTMLElement).closest('button')?.dataset.vis as VisualMode | undefined;
@@ -870,6 +887,12 @@ function frame(now: number) {
   if (layer) {
     layer.update(sim);
     updateCamera();
+    const sel = layer.selected;
+    const shown = sel >= 0 && !layer.hidden.has(layer.sats[sel].category);
+    groundTrack.group.visible = shown;
+    coverage = shown
+      ? groundTrack.update(sim, layer.positionOf(sel, tmp), { width: canvas.clientWidth, height: canvas.clientHeight })
+      : null;
     models.update(layer, globe.camera, canvas.clientHeight);
     updateReticle();
   } else {

@@ -24,14 +24,19 @@ const glyphVertex = /* glsl */ `
   attribute float aShape;
   attribute float aSize;
   uniform float pixelRatio;
+  // While a target is locked, everything else is drawn smaller and dimmer (-1 = none).
+  uniform float focusA;
+  uniform float focusB;
   varying vec3 vColor;
   varying float vShape;
   void main() {
-    vColor = aColor;
+    float id = float(gl_VertexID);
+    bool background = focusA >= 0.0 && id != focusA && id != focusB;
+    vColor = aColor * (background ? 0.5 : 1.0);
     vShape = aShape;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     // Enlarged to make room for the dark outline drawn around each glyph.
-    gl_PointSize = (aSize * 1.35 + 1.0) * pixelRatio;
+    gl_PointSize = (aSize * (background ? 0.65 : 1.0) * 1.35 + 1.0) * pixelRatio;
   }
 `;
 
@@ -159,7 +164,11 @@ export class SatelliteLayer implements ModelSource {
     this.points = new THREE.Points(
       geometry,
       new THREE.ShaderMaterial({
-        uniforms: { pixelRatio: { value: Math.min(window.devicePixelRatio, 2) } },
+        uniforms: {
+          pixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+          focusA: { value: -1 },
+          focusB: { value: -1 },
+        },
         vertexShader: glyphVertex,
         fragmentShader: glyphFragment,
         // Drawn in the transparent pass, after the Earth tiles and the atmosphere, and writing depth,
@@ -348,9 +357,16 @@ export class SatelliteLayer implements ModelSource {
     }
   }
 
+  private syncFocus() {
+    const u = (this.points.material as THREE.ShaderMaterial).uniforms;
+    u.focusA.value = this.selected;
+    u.focusB.value = this.secondary;
+  }
+
   select(index: number, simMs: number) {
     this.selected = index;
     if (index < 0) this.secondary = -1;
+    this.syncFocus();
     if (index >= 0) {
       this.applyLineColors();
       this.computeOrbit(index, this.orbitLine, simMs);
@@ -361,6 +377,7 @@ export class SatelliteLayer implements ModelSource {
   /** Show a second object alongside the selection (a close-approach partner), or -1 to clear. */
   setSecondary(index: number, simMs: number) {
     this.secondary = index;
+    this.syncFocus();
     if (index < 0) return;
     this.applyLineColors();
     this.computeOrbit(index, this.orbitLine2, simMs);
