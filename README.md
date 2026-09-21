@@ -1,9 +1,26 @@
 # OrbitWatch — live satellite tracker
 
-**▶ Live: [zachary-malcolm.github.io/orbitwatch](https://zachary-malcolm.github.io/orbitwatch/)**
+**▶ Live: [zachary-malcolm.github.io/orbitwatch](https://zachary-malcolm.github.io/orbitwatch/)** · try the ISS: [#norad=25544](https://zachary-malcolm.github.io/orbitwatch/#norad=25544)
 
-A real-time 3D globe showing every active satellite in orbit (~16,000 objects), computed in the browser from live orbital data,
-presented as a 1980s amber-phosphor orbital surveillance terminal.
+A real-time 3D globe showing every active satellite in orbit (~16,000 objects) plus ~2,700 debris fragments, computed in
+the browser from live orbital data, presented as a 1980s amber-phosphor orbital surveillance terminal.
+
+![OrbitWatch terminal: live gauges, orbital census, layer filter and the phosphor globe with every tracked object](docs/media/hero.jpg)
+
+<p align="center">
+  <img src="docs/media/flyin.gif" alt="Camera flying from the global view down to the ISS, which is drawn with NASA's 3D model" width="640">
+</p>
+
+| | |
+|---|---|
+| ![ISS target dossier with the NASA 3D model, owner, launch data and live telemetry](docs/media/dossier.jpg) | ![Hubble in true-colour mode over NASA Blue Marble imagery](docs/media/true-colour.jpg) |
+| **Target dossier.** Owner, launch, status, briefing and live telemetry, with NASA's 3D model up close | **True colour.** NASA imagery streamed down to ~600 m per pixel; Hubble with its NASA model |
+| ![Ground track, coverage footprint and pass predictions for the ISS over Greenwich](docs/media/ground-track.jpg) | ![Encounter view held at closest approach: 30 m between a Starlink satellite and Fengyun-1C debris](docs/media/encounter.jpg) |
+| **Ground track and passes.** Footprint rings, the track beneath the ISS, and its next passes over a station | **Close approach.** Clock held at the moment of closest approach: 30 m at 13.3 km/s |
+| ![Conjunction watch listing the closest approaches of the next 24 hours](docs/media/conjunctions.jpg) | |
+| **Conjunction watch.** ~18,700 objects screened pair-wise for passes under 5 km in about 6 seconds | |
+
+## Features
 
 - **Terminal interface**: a dense modular cockpit grid (status bar, systems column, bezelled viewport, target dossier, event log, chrono
   control) in a strict amber palette with CRT scanlines, segmented block gauges and block sparklines. Every gauge is measured, not
@@ -40,6 +57,9 @@ presented as a 1980s amber-phosphor orbital surveillance terminal.
 npm install
 npm run dev
 ```
+
+The README screenshots and GIF are generated from the live site by `npm run capture`, which drives a locally installed
+Chrome through Playwright (see `scripts/capture-readme.mjs`).
 
 ## How it works
 
