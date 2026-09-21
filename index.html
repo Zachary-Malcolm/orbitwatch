@@ -58,6 +58,20 @@
           </div>
         </section>
 
+        <section class="mod observer">
+          <h2><span>OBSERVER STATION</span><i>11</i></h2>
+          <div class="row"><label>POSITION</label><b id="o-pos">NOT SET</b></div>
+          <div class="row"><label>LOCAL SKY</label><b id="o-sky">--</b></div>
+          <div class="row"><label>ABOVE HORIZON</label><b id="o-above">--</b></div>
+          <div class="prompt"><span>&gt;</span><input id="o-input" placeholder="LAT, LON  e.g. 51.48, -0.00" autocomplete="off" spellcheck="false" /></div>
+          <div class="btn-row">
+            <button id="o-locate" title="Use this device's location (your browser will ask permission)">LOCATE ME</button>
+            <button id="o-pick" title="Click a point on the globe">PICK ON GLOBE</button>
+            <button id="o-clear">CLEAR</button>
+          </div>
+          <p class="dim note">KEPT IN THIS BROWSER ONLY. NEVER SENT OR SHARED IN LINKS.</p>
+        </section>
+
         <section class="mod">
           <h2><span>DATA LINKS</span><i>05</i></h2>
           <div class="row"><label>CELESTRAK</label><b id="l-celestrak">--</b></div>
@@ -178,6 +192,14 @@
             <div class="bar" id="b-range"></div>
             <div class="btn-row"><button id="e-replay">REPLAY −60 S</button><button id="e-exit">EXIT ENCOUNTER</button></div>
           </div>
+
+          <h4>PASSES OVER STATION <em class="illum" id="p-now"></em></h4>
+          <div id="p-body">
+            <div class="row"><label>FROM STATION NOW</label><b id="p-look">--</b></div>
+            <div class="row"><label>NEXT PASS</label><b id="p-next">--</b></div>
+            <ol id="p-list" class="pass-list"></ol>
+          </div>
+          <div id="p-none" class="dim">SET AN OBSERVER STATION (LEFT PANEL) TO PREDICT WHEN THIS OBJECT PASSES OVERHEAD.</div>
 
           <h4 id="d-conj-title">CLOSE APPROACHES</h4>
           <ol id="d-conj" class="cj-list"></ol>

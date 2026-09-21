@@ -4,6 +4,22 @@ import { GlobeScene, type VisualMode } from './scene';
 import { CATEGORIES, SatelliteLayer } from './satellites';
 import { ModelLayer } from './models';
 import { GroundTrack, type Coverage } from './groundTrack';
+import {
+  ObserverMarker,
+  compass,
+  formatLatLon,
+  loadObserver,
+  locate,
+  lookAt,
+  parseLatLon,
+  predictPasses,
+  saveObserver,
+  skyCondition,
+  sunElevation,
+  MIN_PASS_ELEVATION_DEG,
+  type Observer,
+  type PassForecast,
+} from './observer';
 import { NASA_MODEL_NAMES } from './nasaModels';
 import { fetchIntel, type CatalogInfo, type WikiInfo } from './intel';
 import { loadDebris, loadSatellites, type Category, type SatInfo } from './tle';
@@ -15,11 +31,19 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 
 mountLog($('log'));
 log('SYSTEM', 'ORBITWATCH MK-II TERMINAL ONLINE', 'ok');
+queueMicrotask(() => {
+  const saved = loadObserver();
+  if (!saved) return;
+  setObserver(saved, false);
+  log('STATION', `OBSERVER RESTORED · ${formatLatLon(saved)}`);
+});
 
 const globe = new GlobeScene($('globe'));
 const models = new ModelLayer(globe.scene);
 const groundTrack = new GroundTrack(globe.earth);
 let coverage: Coverage | null = null;
+const observerMarker = new ObserverMarker(globe.scene, globe.earth);
+const beamTarget = new THREE.Vector3();
 let layer: SatelliteLayer | null = null;
 const bootTime = performance.now();
 log('RENDER', `WEBGL${globe.renderer.capabilities.isWebGL2 ? '2' : '1'} CONTEXT · MAX TEX ${globe.renderer.capabilities.maxTextureSize}`);
@@ -221,7 +245,144 @@ function select(index: number, keepEncounter = false) {
   beginFlight('to-sat');
   updateDetails();
   renderTargetConjunctions(index);
+  refreshPasses();
   updateHash();
+}
+
+// ---- Observer station & pass prediction ----------------------------------------
+let observer: Observer | null = null;
+let forecast: PassForecast | null = null;
+let forecastFor = -1;
+let forecastAt = 0;
+let picking = false;
+let lastAbove: boolean | null = null;
+
+function setObserver(o: Observer | null, announce = true) {
+  observer = o;
+  saveObserver(o);
+  observerMarker.setObserver(o);
+  $('o-pos').textContent = o ? formatLatLon(o) : 'NOT SET';
+  if (announce) log('STATION', o ? `OBSERVER SET · ${formatLatLon(o)} · ${o.source.toUpperCase()}` : 'OBSERVER CLEARED');
+  lastAbove = null;
+  refreshPasses();
+  updateObserverReadouts(simNow());
+}
+
+function setPicking(on: boolean) {
+  picking = on;
+  document.body.classList.toggle('picking', on);
+  $('o-pick').classList.toggle('active', on);
+}
+
+$('o-locate').addEventListener('click', () => {
+  log('STATION', 'REQUESTING DEVICE LOCATION');
+  locate().then(setObserver, (err: GeolocationPositionError | Error) =>
+    log('STATION', `LOCATION UNAVAILABLE · ${err.message.toUpperCase()}`, 'warn'),
+  );
+});
+$('o-pick').addEventListener('click', () => {
+  setPicking(!picking);
+  if (picking) log('STATION', 'CLICK A POINT ON THE GLOBE TO PLACE THE STATION');
+});
+$('o-clear').addEventListener('click', () => setObserver(null));
+$<HTMLInputElement>('o-input').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const input = e.target as HTMLInputElement;
+  const o = parseLatLon(input.value);
+  if (!o) {
+    log('STATION', 'COULD NOT READ COORDINATES · TRY "51.48, -0.00"', 'warn');
+    return;
+  }
+  input.value = '';
+  setObserver(o);
+});
+
+function refreshPasses() {
+  const sel = layer?.selected ?? -1;
+  $('p-body').hidden = !observer;
+  $('p-none').hidden = !!observer;
+  forecast = null;
+  forecastFor = sel;
+  if (!layer || sel < 0 || !observer) return;
+  forecastAt = simNow();
+  forecast = predictPasses(layer.sats[sel].satrec, observer, forecastAt);
+  renderPasses();
+}
+
+const localTime = (ms: number) =>
+  new Date(ms)
+    .toLocaleString('en-GB', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+    .toUpperCase()
+    .replace(',', ' ·');
+
+function renderPasses() {
+  const list = $('p-list');
+  list.replaceChildren();
+  if (!forecast) return;
+  const note = (text: string) => {
+    list.innerHTML = '<li class="empty"></li>';
+    list.firstElementChild!.textContent = text;
+  };
+  if (forecast.kind === 'always') {
+    note(`SLOW ORBIT · STAYS UP AT AZ ${fmt(forecast.azDeg, 0)}° ${compass(forecast.azDeg)} · EL ${fmt(forecast.elDeg, 0)}°`);
+    return;
+  }
+  if (forecast.kind === 'never') return note('NEVER RISES ABOVE THIS HORIZON');
+  if (!forecast.passes.length) return note(`NO PASSES ABOVE ${MIN_PASS_ELEVATION_DEG}° IN THE NEXT 3 DAYS`);
+  for (const p of forecast.passes) {
+    const li = document.createElement('li');
+    li.classList.toggle('low', p.maxEl < 30);
+    const cells: [string, string][] = [
+      ['when', `${p.inProgress ? 'NOW' : localTime(p.riseMs)}`],
+      ['peak', `MAX ${fmt(p.maxEl, 0)}°`],
+      [
+        'path',
+        `${compass(p.riseAz)} → ${compass(p.maxAz)} → ${compass(p.setAz)} · ${fmt((p.setMs - p.riseMs) / 60_000, 0)} MIN`,
+      ],
+    ];
+    for (const [cls, text] of cells) li.append(Object.assign(document.createElement('span'), { className: cls, textContent: text }));
+    if (p.visible) li.querySelector('.peak')!.append(Object.assign(document.createElement('span'), { className: 'vis', textContent: ' ☼ VISIBLE' }));
+    li.title = 'Times are in your local time zone. Click to jump to this pass.';
+    li.addEventListener('click', () => {
+      jumpTo(p.riseMs - 60_000, 10);
+      log('CHRONO', `JUMP TO PASS · ${localTime(p.riseMs)} LOCAL · ×10`);
+    });
+    list.append(li);
+  }
+}
+
+function updateObserverReadouts(sim: number) {
+  if (!observer) {
+    $('o-sky').textContent = '--';
+    return;
+  }
+  const date = new Date(sim);
+  const sunEl = sunElevation(observer, date);
+  $('o-sky').textContent = `${skyCondition(sunEl)} · SUN ${fmt(sunEl, 0)}°`;
+  if (!layer || layer.selected < 0) return;
+  const sel = layer.selected;
+  if (sel !== forecastFor || Math.abs(sim - forecastAt) > 6 * 3_600_000) refreshPasses();
+
+  const look = lookAt(layer.sats[sel].satrec, observer, date);
+  if (!look) return;
+  const above = look.elDeg > 0;
+  $('p-look').textContent = `AZ ${fmt(look.azDeg, 0)}° ${compass(look.azDeg)} · EL ${fmt(look.elDeg, 1)}° · ${fmt(look.rangeKm, 0)} KM`;
+  $('p-now').textContent = above ? 'ABOVE HORIZON' : 'BELOW HORIZON';
+  $('p-now').classList.toggle('shadow', !above);
+  if (lastAbove !== null && above !== lastAbove) {
+    const name = layer.sats[sel].name;
+    log('STATION', `${above ? 'AOS' : 'LOS'} · ${name} ${above ? 'RISES' : 'SETS'} · AZ ${fmt(look.azDeg, 0)}° ${compass(look.azDeg)}`, above ? 'ok' : 'info');
+  }
+  lastAbove = above;
+
+  if (forecast?.kind === 'passes') {
+    const next = forecast.passes.find((p) => p.setMs > sim);
+    if (!next) $('p-next').textContent = '--';
+    else if (next.riseMs <= sim) $('p-next').textContent = `IN PROGRESS · SETS T−${hms(next.setMs - sim)}`;
+    else $('p-next').textContent = `T−${hms(next.riseMs - sim)} · MAX ${fmt(next.maxEl, 0)}°${next.visible ? ' · ☼ VISIBLE' : ''}`;
+  } else {
+    $('p-next').textContent = forecast?.kind === 'always' ? 'ALWAYS UP' : forecast?.kind === 'never' ? 'NEVER' : '--';
+  }
 }
 
 // ---- Right-column tabs ---------------------------------------------------------
@@ -645,6 +806,13 @@ canvas.addEventListener('pointerup', (e) => {
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
   down = null;
   if (moved > 4) return;
+  if (picking) {
+    const ll = cursorLatLon(e);
+    if (!ll) return;
+    setPicking(false);
+    setObserver({ latDeg: ll[0], lonDeg: ll[1], source: 'globe' });
+    return;
+  }
   const hit = pickAt(e);
   if (hit >= 0 && hit !== layer.selected) select(hit);
 });
@@ -847,6 +1015,17 @@ function updateGauges(now: number) {
   sparkProp.push(propRate);
   $('g-prop-v').textContent = `${fmt(propRate / 1000, 1)}K`;
 
+  if (observer) {
+    // Above the horizon when (satellite − station) · up > 0; the station is on the unit sphere, so p · up > 1.
+    const up = observerMarker.worldPosition(new THREE.Vector3());
+    const pos = layer.positions;
+    let above = 0;
+    for (let j = 0; j < pos.length; j += 3) if (pos[j] * up.x + pos[j + 1] * up.y + pos[j + 2] * up.z > 1) above++;
+    $('o-above').textContent = `${above.toLocaleString('en-GB')} OBJ`;
+  } else {
+    $('o-above').textContent = '--';
+  }
+
   const live = layer.liveCounts(globe.camera, globe.sunDir);
   $('m-sunlit').textContent = `${fmt((live.sunlit / Math.max(live.shown, 1)) * 100, 1)}% · ${live.sunlit.toLocaleString('en-GB')}`;
   blocks($('b-sunlit'), live.sunlit / Math.max(live.shown, 1));
@@ -893,6 +1072,7 @@ function frame(now: number) {
     coverage = shown
       ? groundTrack.update(sim, layer.positionOf(sel, tmp), { width: canvas.clientWidth, height: canvas.clientHeight })
       : null;
+    observerMarker.update(globe.camera, { width: canvas.clientWidth, height: canvas.clientHeight }, shown ? layer.positionOf(sel, beamTarget) : null);
     models.update(layer, globe.camera, canvas.clientHeight);
     updateReticle();
   } else {
@@ -904,6 +1084,7 @@ function frame(now: number) {
     lastFast = now;
     updateFastReadouts(sim);
     updateEncounterReadouts(sim);
+    updateObserverReadouts(sim);
     if (!$('standby').hidden) $('radar').textContent = radarFrame(now / 700);
   }
   if (now - lastGauge > GAUGE_MS) updateGauges(now);

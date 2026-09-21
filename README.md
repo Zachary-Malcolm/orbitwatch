@@ -27,6 +27,10 @@ presented as a 1980s amber-phosphor orbital surveillance terminal.
 - **Ground track and coverage footprint**: the path traced on the ground beneath the locked target (half an orbit behind,
   one and a half ahead) and the region that can see it, above the horizon and 10° up, with footprint radius and share of
   the Earth covered. Other satellites dim while a target is locked so the overlays stay readable
+- **Pass predictor**: set an observer station (device location, a click on the globe, or typed coordinates; kept only
+  in the browser) to list the locked target's passes over the next 3 days, with rise/peak/set times and directions in
+  local time, a countdown, and a ☼ VISIBLE flag when it can be seen with the naked eye. The station shows on the globe
+  with a line-of-sight beam while the target is above its horizon, and the event log records AOS/LOS as it rises and sets
 - **Shareable links**: `#norad=25544` opens a satellite; `#norad=A&with=B&t=<ISO time>` opens a specific close approach
 - Search by name or NORAD ID, filter by constellation, and fast-forward time up to 1000×
 
@@ -50,6 +54,7 @@ npm run dev
 | `src/earthTiles.ts` | Quadtree level-of-detail streaming of NASA GIBS imagery tiles |
 | `src/nasaModels.ts` | Satellite → NASA model mapping, lazy glTF loading and instancing |
 | `src/groundTrack.ts` | Ground track and coverage footprint, drawn in the Earth-fixed frame |
+| `src/observer.ts` | Observer station, look angles, pass prediction and visibility, globe marker and beam |
 | `src/conjunctions.ts` | Splits close-approach screening across parallel workers and merges the results |
 | `src/conjunctionWorker.ts` | The screening itself: grid sieve, linear closest-approach test, SGP4 refinement |
 | `src/satellites.ts` | Satellite point cloud, propagation, screen-space picking, orbit paths |
@@ -83,6 +88,12 @@ sidereal time at each instant and projected onto the surface, which is why succe
 The footprint ring's angular radius from the Earth's centre is λ = acos(cos ε / r) − ε for minimum elevation ε
 and orbit radius r (in Earth radii): about 20° for the ISS and 81° from geostationary orbit.
 
+**Pass prediction.** Elevation above the station's horizon is stepped through the next 3 days (about 180 samples per
+orbit), each horizon crossing is bisected to within a second, and the peak is found by golden-section search. Passes
+peaking below 10° are skipped. A pass is marked visible if, at some point, the satellite is sunlit, the Sun is more
+than 6° below the station's horizon (civil twilight or darker), and the satellite is over 10° up. Slow orbits (period
+over 10 hours) that never set or never rise are reported as such.
+
 **Close-approach screening.** Every 60 s of the window, each object is propagated with SGP4 and dropped into
 a 3D grid whose cells are the furthest two objects could close in half a step (5 km + 16 km/s × 30 s). Only
 pairs in neighbouring cells are compared, using their straight-line relative motion over the half-step (two
@@ -103,5 +114,4 @@ Public TLEs are accurate to roughly a kilometre, so miss distances are indicativ
 
 ## Roadmap ideas
 
-- Pass predictions: "when is the ISS next visible from my location?"
 - Deep-link URLs to a selected satellite

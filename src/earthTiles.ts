@@ -38,7 +38,7 @@ interface Tile {
 }
 
 /** Earth-fixed unit vector, matching the base sphere's texture mapping (lon 0 on +X, north on +Y). */
-function latLonToVec(lat: number, lon: number, out = new THREE.Vector3()) {
+export function latLonToVec(lat: number, lon: number, out = new THREE.Vector3()) {
   const cl = Math.cos(lat);
   return out.set(cl * Math.cos(lon), Math.sin(lat), -cl * Math.sin(lon));
 }

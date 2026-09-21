@@ -503,7 +503,7 @@ export class SatelliteLayer implements ModelSource {
 }
 
 /** Cylindrical Earth-shadow model: in shadow if behind the Earth and within one radius of the sun line. */
-function isSunlit(p: { x: number; y: number; z: number }, date: Date): boolean {
+export function isSunlit(p: { x: number; y: number; z: number }, date: Date): boolean {
   const { rsun } = sunPos(jday(date));
   const len = Math.hypot(rsun.x, rsun.y, rsun.z);
   const along = (p.x * rsun.x + p.y * rsun.y + p.z * rsun.z) / len;

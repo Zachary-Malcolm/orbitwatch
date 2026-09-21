@@ -476,3 +476,27 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 .hud.bc { bottom: 14px; left: 50%; transform: translateX(-50%); font: 400 20px/1.1 var(--pixel); border-color: var(--warn); }
 .hud.bc[hidden] { display: none; }
 #d-encounter[hidden] { display: none; }
+
+/* ---------- Observer station & passes ---------- */
+.observer .prompt { margin-top: 8px; }
+.observer .note, #p-none { margin: 8px 0 0; font-size: 11px; }
+body.picking #globe canvas { cursor: crosshair !important; }
+.pass-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.pass-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 8px;
+  padding: 4px 5px;
+  border-top: 1px dashed var(--amber-dim);
+  cursor: pointer;
+}
+.pass-list li:hover { background: var(--amber); color: var(--bg); text-shadow: none; }
+.pass-list li:hover * { color: var(--bg) !important; text-shadow: none !important; }
+.pass-list li.empty { display: block; cursor: default; color: var(--amber-mid); }
+.pass-list li.empty:hover { background: none; color: var(--amber-mid); }
+.pass-list .when { font: 400 19px/1 var(--pixel); }
+.pass-list .peak { text-align: right; }
+.pass-list .path { grid-column: 1 / -1; color: var(--amber-mid); }
+.pass-list .vis { color: #fff; text-shadow: 0 0 4px rgba(255, 255, 255, 0.7); }
+.pass-list li.low .when { color: var(--amber-mid); }
+#p-body[hidden], #p-none[hidden] { display: none; }
