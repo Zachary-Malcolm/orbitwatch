@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Production builds are served from GitHub Pages at /orbitwatch/; the dev server stays at /.
+  base: command === 'build' ? '/orbitwatch/' : '/',
   // satellite.js ships an optional multi-threaded WASM propagator whose worker uses
   // top-level await, which the default (iife) worker format can't bundle.
   worker: { format: 'es' },
   build: { target: 'es2022' },
-});
+}));
