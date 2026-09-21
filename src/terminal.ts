@@ -38,7 +38,7 @@ const MAX_LOG_LINES = 120;
 export function mountLog(list: HTMLElement) {
   onLog((entry: LogEntry) => {
     const li = document.createElement('li');
-    li.className = `fresh ${entry.level}`;
+    li.className = `fresh ${entry.level} src-${entry.source.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     const cells = [entry.time.toISOString().slice(11, 19), entry.source, entry.message];
     cells.forEach((text, i) => {
       const span = document.createElement('span');

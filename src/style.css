@@ -14,6 +14,10 @@
   --amber-faint: rgba(255, 176, 0, 0.12);
   --grid: #1a261c;
   --warn: #ff3333;
+  /* Incoming transmissions from outside sources (news). Deeper than Starlink's cyan on purpose. */
+  --feed: #5aa9ff;
+  --feed-dim: rgba(90, 169, 255, 0.6);
+  --feed-glow: 0 0 3px rgba(90, 169, 255, 0.55);
   --glow: 0 0 3px rgba(255, 176, 0, 0.55);
   --term: 'Share Tech Mono', 'Courier New', monospace;
   --pixel: 'VT323', 'Courier New', monospace;
@@ -433,8 +437,6 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
   .col { overflow: visible; }
   .bottom { grid-template-columns: minmax(0, 1fr); grid-template-rows: 200px auto; }
   .hide-sm { display: none; }
-  /* No room for the ticker in a narrow status bar; the NEWS tab still has everything. */
-  .ticker { display: none; }
   .statusbar { justify-content: space-between; }
   .hud.tl, .hud.bl, .hud.br { display: none; }
   .hud.tr { right: 12px; }
@@ -504,7 +506,9 @@ body.picking #globe canvas { cursor: crosshair !important; }
 .pass-list li.low .when { color: var(--amber-mid); }
 #p-body[hidden], #p-none[hidden] { display: none; }
 
-/* ---------- News: ticker, NEWS tab, dossier section ---------- */
+/* ---------- News: ticker, NEWS tab, dossier section ----------
+   Everything from the news feed is blue: amber is this terminal's own telemetry,
+   blue is incoming transmissions from outside. ◉ NEW stays red as a signal. */
 .ticker {
   flex: 1;
   min-width: 0;
@@ -513,22 +517,23 @@ body.picking #globe canvas { cursor: crosshair !important; }
   gap: 8px;
   overflow: hidden;
   white-space: nowrap;
-  color: var(--amber);
+  color: var(--feed);
+  text-shadow: var(--feed-glow);
   text-decoration: none;
 }
 .ticker:hover #ticker-text { text-decoration: underline; }
-.tk-tag { padding: 0 5px; background: var(--amber); color: var(--bg); text-shadow: none; flex: none; }
+.tk-tag { padding: 0 5px; background: var(--feed); color: var(--bg); text-shadow: none; flex: none; }
 .ticker.fresh .tk-tag { background: var(--warn); }
 #ticker-text { overflow: hidden; text-overflow: ellipsis; }
 .tk-cursor { animation: blink 1s steps(1) infinite; flex: none; }
 .newsfeed[hidden] { display: none; }
 .news-list { list-style: none; margin: 6px 0 0; padding: 0; }
-.news-list li { border-top: 1px dashed var(--amber-dim); }
-.news-list li.empty { padding: 4px 0; color: var(--amber-mid); border: none; }
-.news-list a { display: block; padding: 5px 5px; color: var(--amber); text-decoration: none; }
-.news-list a:hover { background: var(--amber); color: var(--bg); text-shadow: none; }
+.news-list li { border-top: 1px dashed var(--feed-dim); }
+.news-list li.empty { padding: 4px 0; color: var(--feed-dim); border: none; text-shadow: none; }
+.news-list a { display: block; padding: 5px 5px; color: var(--feed); text-shadow: var(--feed-glow); text-decoration: none; }
+.news-list a:hover { background: var(--feed); color: var(--bg); text-shadow: none; }
 .news-list a:hover * { color: var(--bg) !important; }
-.news-list .meta { display: block; font-size: 11px; color: var(--amber-mid); }
+.news-list .meta { display: block; font-size: 11px; color: var(--feed-dim); }
 .news-list .meta .new { color: var(--warn); }
 .news-list .ttl { display: block; }
 .news-list .sum {
@@ -539,5 +544,20 @@ body.picking #globe canvas { cursor: crosshair !important; }
   margin-top: 2px;
   font-size: 12px;
   text-transform: none;
-  color: var(--amber-mid);
+  color: var(--feed-dim);
+}
+.newsfeed { border-color: var(--feed-dim); }
+.newsfeed h2, #right-tabs [data-tab='news'].active, #right-tabs [data-tab='news']:hover { background: var(--feed); border-color: var(--feed); }
+#right-tabs [data-tab='news'] { color: var(--feed); border-color: var(--feed); text-shadow: var(--feed-glow); }
+#right-tabs [data-tab='news'].active, #right-tabs [data-tab='news']:hover { color: var(--bg); text-shadow: none; }
+.newsfeed .row label, .newsfeed .row b { color: var(--feed); text-shadow: var(--feed-glow); }
+#d-news-title { color: var(--feed); text-shadow: var(--feed-glow); }
+#d-news-title::after { border-color: var(--feed-dim); }
+#log .src-news { color: var(--feed); text-shadow: var(--feed-glow); }
+#log .src-news.warn { color: var(--warn); }
+
+/* No room for the ticker in a narrow status bar; the NEWS tab still has everything.
+   (After the ticker's own rules so it wins.) */
+@media (max-width: 900px) {
+  .ticker { display: none; }
 }

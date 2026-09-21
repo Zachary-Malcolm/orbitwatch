@@ -1170,12 +1170,15 @@ function frame(now: number) {
     coverage = shown
       ? groundTrack.update(sim, layer.positionOf(sel, tmp), { width: canvas.clientWidth, height: canvas.clientHeight })
       : null;
-    observerMarker.update(globe.camera, { width: canvas.clientWidth, height: canvas.clientHeight }, shown ? layer.positionOf(sel, beamTarget) : null);
+
     models.update(layer, globe.camera, canvas.clientHeight);
     updateReticle();
   } else {
     globe.controls.update();
   }
+  // Outside the layer check so a restored station is sized correctly while the catalogue loads.
+  const target = layer && layer.selected >= 0 && !layer.hidden.has(layer.sats[layer.selected].category) ? layer.positionOf(layer.selected, beamTarget) : null;
+  observerMarker.update(globe.camera, { width: canvas.clientWidth, height: canvas.clientHeight }, target);
   updateHover();
 
   if (now - lastFast > 250) {
