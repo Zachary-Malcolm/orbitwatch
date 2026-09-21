@@ -88,7 +88,19 @@ Chrome through Playwright (see `scripts/capture-readme.mjs`).
 | `src/screening.ts` | The screening itself: grid sieve, linear closest-approach test, SGP4 refinement |
 | `src/conjunctionWorker.ts` | Runs the screening in a Web Worker, off the main thread |
 | `src/satellites.ts` | Satellite point cloud, propagation, screen-space picking, orbit paths |
-| `src/main.ts` | Simulated clock, gauges, search, dossier, camera flights and tracking |
+| `src/main.ts` | Entry point: wires up the panels, runs the frame loop and loads the catalogue |
+| `src/ui/context.ts` | The shared scene objects and catalogue state the panels use |
+| `src/ui/clock.ts` | Simulated clock: hold, speed up, jump to a time |
+| `src/ui/camera.ts` | Camera flights to and from a target, and tracking in the target's own frame |
+| `src/ui/selection.ts` | Locking onto and releasing a target |
+| `src/ui/dossier.ts` | Target dossier: catalogue record, briefing and live telemetry |
+| `src/ui/passesPanel.ts` | Observer station controls and the pass list |
+| `src/ui/conjunctionPanel.ts` | Close-approach list and screening controls |
+| `src/ui/encounter.ts` | Encounter replay, held at the moment of closest approach |
+| `src/ui/links.ts` | Shareable links (`#norad=…`) |
+| `src/ui/newsPanel.ts` | News ticker, NEWS tab and per-object news |
+| `src/ui/gauges.ts` | Measured gauges, readouts and the orbit-regime census |
+| `src/ui/picking.ts`, `search.ts`, `legend.ts`, `display.ts`, `tabs.ts` | Globe clicks and hover, search, layer filter, display switches, tabs |
 | `src/terminal.ts` | Text-mode widgets: block bars, sparklines, event log, radar sweep |
 | `src/telemetry.ts` | Event log bus and timed fetches for link latency |
 | `test/` | Unit tests for the orbital maths (see Testing below) |

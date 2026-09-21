@@ -55,7 +55,10 @@ in the browser's Cache API for 2 hours.
 ## Code notes
 
 - `tsconfig` has `erasableSyntaxOnly`: **no constructor parameter properties** (declare fields and assign).
-- `src/main.ts` (~1,200 lines) holds UI wiring for everything and needs splitting.
+- UI code lives in `src/ui/`, one module per panel, each with an `init…()` that `src/main.ts` calls in order
+  (main.ts also runs the frame loop and boot). Shared scene objects and state (`app.layer` etc.) are in
+  `src/ui/context.ts`. Modules import each other's functions freely; keep top-level code to declarations
+  and do wiring inside `init…()` so import order never matters.
 - Verify in the browser preview with **text/DOM checks first** and few screenshots (they are costly).
   A dev-only `window.debug` exposes `globe`, `models`, `getLayer()` and `getConj()`.
 - Commit messages end with a `Co-Authored-By: Claude …` line (shows Claude as a GitHub contributor).
@@ -64,7 +67,7 @@ in the browser's Cache API for 2 hours.
 ## Next steps (agreed priority)
 
 1. ~~Tests + CI~~ (done 2026-09-21: 39 tests, CI workflow, README badge and Testing section).
-2. **Split `main.ts`** into modules (camera, dossier, gauges, observer/passes, conjunction UI, news, links).
+2. ~~Split `main.ts`~~ (done 2026-09-22: `src/ui/`, main.ts 1,236 → 126 lines).
 3. **Lighter on phones:** run close-approach screening only when the APPROACHES tab is opened (or on idle),
    use fewer workers on mobile, and consider fewer imagery tiles.
 4. **Onboarding:** a short "how to read this terminal" overlay or guided first click for new visitors.
