@@ -89,10 +89,32 @@
         </div>
         <div class="hud bl">CURSOR <b id="h-cursor">--</b></div>
         <div class="hud br">GRID 15° · <b id="h-tiles">--</b></div>
+        <div class="hud bc" id="h-encounter" hidden>RANGE <b id="h-range">--</b> · TCA <b id="h-tca">--</b></div>
       </main>
 
       <!-- ============ RIGHT: TARGET ============ -->
       <aside class="col right">
+        <div class="tabs" id="right-tabs">
+          <button data-tab="target" class="active">TARGET</button>
+          <button data-tab="conj">CLOSE APPROACHES <b id="conj-count">··</b></button>
+        </div>
+
+        <section class="mod conj" id="conj" hidden>
+          <h2><span>CONJUNCTION WATCH</span><i>10</i></h2>
+          <p class="dim">EVERY TRACKED OBJECT SCREENED AGAINST EVERY OTHER FOR PASSES CLOSER THAN 5 KM.</p>
+          <div class="row"><label>STATUS</label><b id="cj-status">AWAITING CATALOGUE</b></div>
+          <div class="bar" id="b-cj"></div>
+          <div class="row"><label>WINDOW</label>
+            <div class="seg" id="cj-window">
+              <button data-h="6">6H</button><button data-h="12">12H</button><button data-h="24" class="active">24H</button>
+            </div>
+          </div>
+          <button class="toggle" id="cj-intra" aria-pressed="false">[ ] INCLUDE PAIRS WITHIN ONE CONSTELLATION</button>
+          <button class="release" id="cj-run">[ RE-SCREEN FROM NOW ]</button>
+          <ol id="cj-list" class="cj-list"></ol>
+          <p class="dim note">SCREENED FROM PUBLIC TLES, WHICH ARE ACCURATE TO ROUGHLY 1 KM: MISS DISTANCES ARE INDICATIVE, NOT OPERATIONAL.</p>
+        </section>
+
         <section class="mod standby" id="standby">
           <h2><span>TARGET DOSSIER</span><i>06</i></h2>
           <pre class="radar" id="radar"></pre>
@@ -137,11 +159,30 @@
           <div class="bar" id="b-phase"></div>
           <div class="regime" id="d-regime"></div>
 
+          <div id="d-encounter" hidden>
+            <h4>CLOSE APPROACH <em class="illum" id="e-sev"></em></h4>
+            <dl class="kv">
+              <dt>WITH</dt><dd><button class="linkish" id="e-with"></button></dd>
+              <dt>TCA</dt><dd id="e-tca"></dd>
+              <dt>MISS</dt><dd id="e-miss"></dd>
+              <dt>REL SPEED</dt><dd id="e-speed"></dd>
+              <dt>RANGE NOW</dt><dd id="e-range"></dd>
+            </dl>
+            <div class="bar" id="b-range"></div>
+            <div class="btn-row"><button id="e-replay">REPLAY −60 S</button><button id="e-exit">EXIT ENCOUNTER</button></div>
+          </div>
+
+          <h4 id="d-conj-title">CLOSE APPROACHES</h4>
+          <ol id="d-conj" class="cj-list"></ol>
+
           <h4 id="d-about-title">BRIEFING</h4>
           <p class="about loading" id="d-about"></p>
           <a class="wiki-link" id="d-wiki" target="_blank" rel="noopener" hidden></a>
 
-          <button class="release" id="release">[ RELEASE TARGET ]</button>
+          <div class="btn-row">
+            <button id="copy-link">[ COPY LINK ]</button>
+            <button id="release">[ RELEASE TARGET ]</button>
+          </div>
         </section>
       </aside>
 

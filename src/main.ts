@@ -5,7 +5,8 @@ import { CATEGORIES, SatelliteLayer } from './satellites';
 import { ModelLayer } from './models';
 import { NASA_MODEL_NAMES } from './nasaModels';
 import { fetchIntel, type CatalogInfo, type WikiInfo } from './intel';
-import { loadSatellites, type Category } from './tle';
+import { loadDebris, loadSatellites, type Category, type SatInfo } from './tle';
+import { isIntraConstellation, screenConjunctions, severity, type Conjunction, type ScreenResult } from './conjunctions';
 import { latency, log } from './telemetry';
 import { blocks, mountLog, radarFrame, Sparkline } from './terminal';
 
@@ -26,13 +27,18 @@ let anchorSim = Date.now();
 let anchorReal = performance.now();
 const simNow = () => anchorSim + (performance.now() - anchorReal) * speed;
 
-function setSpeed(next: number, resetToNow = false) {
-  anchorSim = resetToNow ? Date.now() : simNow();
+/** Set the simulated clock to `ms` and run it at `nextSpeed`. */
+function jumpTo(ms: number, nextSpeed: number) {
+  anchorSim = ms;
   anchorReal = performance.now();
-  speed = next;
+  speed = nextSpeed;
   document.querySelectorAll<HTMLButtonElement>('#speeds [data-speed]').forEach((b) => {
     b.classList.toggle('active', Number(b.dataset.speed) === speed);
   });
+}
+
+function setSpeed(next: number, resetToNow = false) {
+  jumpTo(resetToNow ? Date.now() : simNow(), next);
   log('CHRONO', resetToNow ? 'RESYNCED TO REAL TIME' : speed === 0 ? 'SIMULATION HELD' : `TIME RATE ×${speed}`);
 }
 
@@ -165,16 +171,18 @@ function updateReticle() {
 // ---- Selection ---------------------------------------------------------------
 let lastSunlit: boolean | null = null;
 
-function select(index: number) {
+function select(index: number, keepEncounter = false) {
   if (!layer) return;
   const previous = layer.selected;
   layer.select(index, simNow());
-  $('details').hidden = index < 0;
-  $('standby').hidden = index >= 0;
+  if (!keepEncounter) clearEncounter();
+  if (index >= 0) showTab('target');
+  else showTab(tab);
   lastSunlit = null;
   if (index < 0) {
     if (previous >= 0) log('TRACK', `TARGET RELEASED · ${layer.sats[previous].name}`);
     if (mode !== 'earth') beginFlight('to-earth');
+    updateHash();
     return;
   }
   const sat = layer.sats[index];
@@ -208,7 +216,260 @@ function select(index: number) {
   });
   beginFlight('to-sat');
   updateDetails();
+  renderTargetConjunctions(index);
+  updateHash();
 }
+
+// ---- Right-column tabs ---------------------------------------------------------
+let tab: 'target' | 'conj' = 'target';
+
+function showTab(next: 'target' | 'conj') {
+  tab = next;
+  const sel = layer?.selected ?? -1;
+  document.querySelectorAll<HTMLButtonElement>('#right-tabs button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  $('conj').hidden = tab !== 'conj';
+  $('details').hidden = tab !== 'target' || sel < 0;
+  $('standby').hidden = tab !== 'target' || sel >= 0;
+}
+
+$('right-tabs').addEventListener('click', (e) => {
+  const next = (e.target as HTMLElement).closest('button')?.dataset.tab as 'target' | 'conj' | undefined;
+  if (next) showTab(next);
+});
+
+// ---- Close-approach screening ----------------------------------------------------
+const THRESHOLD_KM = 5;
+let conj: ScreenResult | null = null;
+let screening = false;
+let windowHours = 24;
+let includeIntra = false;
+
+function visibleEvents(): Conjunction[] {
+  if (!conj || !layer) return [];
+  const sats = layer.sats;
+  return includeIntra && !conj.skipIntra
+    ? conj.events
+    : conj.events.filter((ev) => !isIntraConstellation(sats[ev.a], sats[ev.b]));
+}
+
+const fmtKm = (km: number) => `${fmt(km, km < 10 ? 2 : 0)} KM`;
+const untilText = (ms: number) => (ms >= Date.now() ? `T+${hms(ms - Date.now()).slice(0, -3)}` : 'PASSED');
+
+/** One list row. With `perspective`, only the other object is named. */
+function conjRow(ev: Conjunction, rank: number, perspective = -1): HTMLLIElement {
+  const sats = layer!.sats;
+  const li = document.createElement('li');
+  li.className = severity(ev.missKm);
+  const other = perspective === ev.a ? ev.b : ev.a;
+  const cells: [string, string][] = [
+    ['rk', String(rank).padStart(2, '0')],
+    ['miss', fmtKm(ev.missKm)],
+    ['when', untilText(ev.tcaMs)],
+    ['spd', `${fmt(ev.relSpeedKms, 1)} KM/S`],
+  ];
+  for (const [cls, text] of cells) li.append(Object.assign(document.createElement('span'), { className: cls, textContent: text }));
+  const pair = Object.assign(document.createElement('span'), { className: 'pair' });
+  if (perspective >= 0) pair.append(Object.assign(document.createElement('span'), { className: 'x', textContent: '× ' }), sats[other].name);
+  else pair.append(sats[ev.a].name, Object.assign(document.createElement('span'), { className: 'x', textContent: ' × ' }), sats[ev.b].name);
+  li.append(pair);
+  li.title = `Closest approach ${new Date(ev.tcaMs).toISOString().replace('T', ' ').slice(0, 19)} UTC`;
+  li.addEventListener('click', () => openEncounter(ev));
+  return li;
+}
+
+function renderConjList() {
+  const list = $('cj-list');
+  list.replaceChildren();
+  const events = visibleEvents();
+  $('conj-count').textContent = conj ? String(events.length) : screening ? '··' : '--';
+  if (!conj) return;
+  if (!events.length) {
+    list.innerHTML = `<li class="empty">NO APPROACHES UNDER ${THRESHOLD_KM} KM IN THIS WINDOW</li>`;
+    return;
+  }
+  events.slice(0, 80).forEach((ev, i) => list.append(conjRow(ev, i + 1)));
+}
+
+function renderTargetConjunctions(index: number) {
+  const list = $('d-conj');
+  list.replaceChildren();
+  $('d-conj-title').textContent = `CLOSE APPROACHES · NEXT ${windowHours} H`;
+  if (!conj) {
+    list.innerHTML = `<li class="empty">${screening ? 'SCREENING IN PROGRESS…' : 'NOT YET SCREENED'}</li>`;
+    return;
+  }
+  const mine = visibleEvents().filter((ev) => ev.a === index || ev.b === index);
+  if (!mine.length) list.innerHTML = `<li class="empty">NONE UNDER ${THRESHOLD_KM} KM</li>`;
+  mine.slice(0, 10).forEach((ev, i) => list.append(conjRow(ev, i + 1, index)));
+}
+
+async function runScreening() {
+  if (!layer || screening) return;
+  screening = true;
+  conj = null;
+  renderConjList();
+  if (layer.selected >= 0) renderTargetConjunctions(layer.selected);
+  const n = layer.sats.length;
+  log('CONJ', `SCREENING ${n.toLocaleString('en-GB')} OBJECTS · ${windowHours} H WINDOW · < ${THRESHOLD_KM} KM`);
+  try {
+    conj = await screenConjunctions(
+      layer.sats,
+      { startMs: Date.now(), hours: windowHours, thresholdKm: THRESHOLD_KM, skipIntra: !includeIntra },
+      (f) => {
+        $('cj-status').textContent = `SCREENING ${Math.round(f * 100)}%`;
+        blocks($('b-cj'), f);
+      },
+    );
+    const events = visibleEvents();
+    $('cj-status').textContent = `${events.length} FOUND · ${fmt(conj.ms / 1000, 1)} S`;
+    blocks($('b-cj'), 1);
+    log(
+      'CONJ',
+      `${events.length} CLOSE APPROACHES · ${fmt(conj.pairsChecked / 1e6, 1)}M PAIR CHECKS · ${conj.workers} WORKERS · ${fmt(conj.ms / 1000, 1)} S`,
+      'ok',
+    );
+    const top = events[0];
+    if (top) {
+      log('CONJ', `CLOSEST · ${layer.sats[top.a].name} × ${layer.sats[top.b].name} · ${fmtKm(top.missKm)} · ${untilText(top.tcaMs)}`, 'warn');
+    }
+  } catch (err) {
+    console.error(err);
+    $('cj-status').textContent = 'SCREENING FAILED';
+    log('CONJ', 'SCREENING FAILED', 'warn');
+  }
+  screening = false;
+  renderConjList();
+  if (layer.selected >= 0) renderTargetConjunctions(layer.selected);
+}
+
+$('cj-run').addEventListener('click', () => runScreening());
+$('cj-window').addEventListener('click', (e) => {
+  const h = Number((e.target as HTMLElement).closest('button')?.dataset.h);
+  if (!h || h === windowHours) return;
+  windowHours = h;
+  document.querySelectorAll<HTMLButtonElement>('#cj-window button').forEach((b) => {
+    b.classList.toggle('active', Number(b.dataset.h) === h);
+  });
+  runScreening();
+});
+$('cj-intra').addEventListener('click', () => {
+  includeIntra = !includeIntra;
+  $('cj-intra').setAttribute('aria-pressed', String(includeIntra));
+  $('cj-intra').textContent = `${includeIntra ? '[X]' : '[ ]'} INCLUDE PAIRS WITHIN ONE CONSTELLATION`;
+  // Screens that skipped intra-constellation pairs never computed them, so re-run when they are wanted.
+  if (includeIntra && conj?.skipIntra) runScreening();
+  else {
+    renderConjList();
+    if (layer && layer.selected >= 0) renderTargetConjunctions(layer.selected);
+  }
+});
+
+// ---- Encounter view ------------------------------------------------------------
+// Opening a close approach locks onto the first object, shows the second alongside it with a
+// red line joining them, rewinds the clock to shortly before closest approach and holds the
+// clock at the exact moment of closest approach.
+const ENCOUNTER_LEAD_MS = 30_000;
+let encounter: (Conjunction & { held: boolean }) | null = null;
+
+function openEncounter(ev: Conjunction) {
+  if (!layer) return;
+  const sats = layer.sats;
+  for (const i of [ev.a, ev.b]) if (layer.hidden.has(sats[i].category)) toggleCategory(sats[i].category, true);
+  select(ev.a, true);
+  encounter = { ...ev, held: false };
+  jumpTo(ev.tcaMs - ENCOUNTER_LEAD_MS, 1);
+  layer.setSecondary(ev.b, simNow());
+  const sev = severity(ev.missKm);
+  $('e-with').textContent = sats[ev.b].name;
+  $('e-tca').textContent = `${new Date(ev.tcaMs).toISOString().replace('T', ' ').slice(0, 19)} UTC`;
+  $('e-miss').textContent = Number.isFinite(ev.missKm) ? fmtKm(ev.missKm) : '--';
+  $('e-speed').textContent = Number.isFinite(ev.relSpeedKms) ? `${fmt(ev.relSpeedKms, 2)} KM/S` : '--';
+  $('e-sev').textContent = sev.toUpperCase();
+  $('e-sev').className = `illum sev-${sev}`;
+  $('d-encounter').hidden = false;
+  $('h-encounter').hidden = false;
+  log('CONJ', `ENCOUNTER · ${sats[ev.a].name} × ${sats[ev.b].name} · MISS ${fmtKm(ev.missKm)}`, sev === 'critical' ? 'warn' : 'info');
+  updateHash();
+}
+
+function clearEncounter() {
+  if (!encounter) return;
+  encounter = null;
+  layer?.setSecondary(-1, simNow());
+  $('d-encounter').hidden = true;
+  $('h-encounter').hidden = true;
+}
+
+function updateEncounterReadouts(sim: number) {
+  if (!encounter || !layer) return;
+  const sep = layer.separation(encounter.a, encounter.b, sim);
+  const range = sep ? fmtKm(sep.km) : '--';
+  $('e-range').textContent = range;
+  $('h-range').textContent = range;
+  const dt = sim - encounter.tcaMs;
+  $('h-tca').textContent = Math.abs(dt) < 500 ? 'NOW' : `${dt < 0 ? 'T−' : 'T+'}${hms(dt)}`;
+  if (sep) blocks($('b-range'), 1 - Math.min(1, sep.km / 500), sep.km < THRESHOLD_KM);
+}
+
+$('e-replay').addEventListener('click', () => {
+  if (!encounter) return;
+  encounter.held = false;
+  jumpTo(encounter.tcaMs - 60_000, 1);
+  log('CHRONO', 'ENCOUNTER REPLAY · T−60 S');
+});
+$('e-exit').addEventListener('click', () => {
+  clearEncounter();
+  updateHash();
+});
+$('e-with').addEventListener('click', () => {
+  if (encounter) select(encounter.b);
+});
+
+// ---- Shareable links -------------------------------------------------------------
+// #norad=25544 opens a satellite; #norad=A&with=B&t=<ISO time> opens a close approach.
+let byNorad = new Map<string, number>();
+
+function updateHash() {
+  if (!layer) return;
+  const sats = layer.sats;
+  let hash = '';
+  if (encounter) {
+    hash = `#norad=${sats[encounter.a].noradId}&with=${sats[encounter.b].noradId}&t=${new Date(encounter.tcaMs).toISOString()}`;
+  } else if (layer.selected >= 0) {
+    hash = `#norad=${sats[layer.selected].noradId}`;
+  }
+  if (hash !== location.hash) history.replaceState(null, '', hash || location.pathname + location.search);
+}
+
+function applyHash() {
+  if (!layer) return;
+  const params = new URLSearchParams(location.hash.slice(1));
+  const a = byNorad.get(params.get('norad') ?? '');
+  if (a === undefined) {
+    if (params.has('norad')) log('LINK', `NORAD ${params.get('norad')} NOT IN CATALOGUE`, 'warn');
+    return;
+  }
+  const b = byNorad.get(params.get('with') ?? '');
+  const t = Date.parse(params.get('t') ?? '');
+  log('LINK', `OPENING SHARED ${b !== undefined ? 'ENCOUNTER' : 'TARGET'} FROM URL`);
+  if (b !== undefined && Number.isFinite(t)) {
+    const sep = layer.separation(a, b, t);
+    openEncounter({ a, b, tcaMs: t, missKm: sep?.km ?? NaN, relSpeedKms: sep?.kms ?? NaN });
+  } else {
+    select(a);
+  }
+}
+
+window.addEventListener('hashchange', applyHash);
+
+$('copy-link').addEventListener('click', () => {
+  navigator.clipboard.writeText(location.href).then(
+    () => log('LINK', `COPIED · ${location.href}`, 'ok'),
+    () => log('LINK', 'CLIPBOARD UNAVAILABLE · COPY THE ADDRESS BAR INSTEAD', 'warn'),
+  );
+});
 
 $('close-details').addEventListener('click', () => select(-1));
 $('release').addEventListener('click', () => select(-1));
@@ -266,8 +527,10 @@ function showWiki(w: WikiInfo | null) {
     $('d-about').textContent = 'No public briefing is available for this object.';
     return;
   }
-  $('d-about-title').textContent =
-    w.context === 'own' ? 'BRIEFING' : w.context === 'programme' ? `PROGRAMME · ${w.title}` : `BACKGROUND · ${w.title}`;
+  // Debris "programme" articles are about the break-up that created the fragment.
+  const isDebris = layer !== null && layer.selected >= 0 && layer.sats[layer.selected].category === 'debris';
+  const label = w.context === 'programme' ? (isDebris ? 'ORIGIN' : 'PROGRAMME') : 'BACKGROUND';
+  $('d-about-title').textContent = w.context === 'own' ? 'BRIEFING' : `${label} · ${w.title}`;
   $('d-about').textContent = w.extract;
   const link = $<HTMLAnchorElement>('d-wiki');
   link.href = w.pageUrl;
@@ -594,7 +857,15 @@ let lastFast = 0;
 
 function frame(now: number) {
   const t0 = performance.now();
-  const sim = simNow();
+  let sim = simNow();
+  if (encounter && !encounter.held && speed > 0 && sim >= encounter.tcaMs && sim - encounter.tcaMs < 60_000) {
+    // Freeze exactly at closest approach so the geometry can be inspected.
+    encounter.held = true;
+    jumpTo(encounter.tcaMs, 0);
+    sim = encounter.tcaMs;
+    const sep = layer?.separation(encounter.a, encounter.b, sim);
+    log('CONJ', `CLOSEST APPROACH · ${sep ? fmtKm(sep.km) : '--'} · HELD AT TCA`, 'warn');
+  }
   globe.setTime(new Date(sim));
   if (layer) {
     layer.update(sim);
@@ -609,6 +880,7 @@ function frame(now: number) {
   if (now - lastFast > 250) {
     lastFast = now;
     updateFastReadouts(sim);
+    updateEncounterReadouts(sim);
     if (!$('standby').hidden) $('radar').textContent = radarFrame(now / 700);
   }
   if (now - lastGauge > GAUGE_MS) updateGauges(now);
@@ -621,9 +893,19 @@ function frame(now: number) {
 requestAnimationFrame(frame);
 
 // ---- Boot --------------------------------------------------------------------
-loadSatellites()
-  .then(({ sats, fetchedAt, source }) => {
+Promise.all([
+  loadSatellites(),
+  loadDebris().catch((err: unknown) => {
+    console.warn(err);
+    log('CELESTRAK', 'DEBRIS CATALOGUE UNAVAILABLE', 'warn');
+    return null;
+  }),
+])
+  .then(([active, debris]) => {
+    const { fetchedAt, source } = active;
+    const sats: SatInfo[] = debris ? [...active.sats, ...debris.sats] : active.sats;
     layer = new SatelliteLayer(sats, globe.scene);
+    byNorad = new Map(sats.map((s, i) => [s.noradId, i]));
     layer.setVisualMode(globe.visualMode);
     models.setCatalog(sats);
     buildLegend(layer.counts());
@@ -633,8 +915,11 @@ loadSatellites()
     $('sb-link').textContent = `■ CELESTRAK ${source.toUpperCase()}`;
     $('sb-link').classList.remove('blink-slow');
     const via = { mirror: `SITE MIRROR, ${age} MIN OLD`, cache: `BROWSER CACHE, ${age} MIN OLD`, live: 'LIVE DOWNLINK' }[source];
-    log('CELESTRAK', `${sats.length.toLocaleString('en-GB')} ELEMENT SETS PARSED · ${via}`, 'ok');
+    log('CELESTRAK', `${active.sats.length.toLocaleString('en-GB')} ELEMENT SETS PARSED · ${via}`, 'ok');
+    if (debris) log('CELESTRAK', `${debris.sats.length.toLocaleString('en-GB')} DEBRIS FRAGMENTS · 4 BREAK-UP EVENTS`, 'ok');
     log('SGP4', 'PROPAGATOR ARMED · ROUND-ROBIN 4 MS SLICE');
+    applyHash();
+    runScreening();
   })
   .catch((err: unknown) => {
     console.error(err);
@@ -643,4 +928,4 @@ loadSatellites()
     log('CELESTRAK', 'COULD NOT RETRIEVE ORBITAL ELEMENTS · RETRY IN A FEW MINUTES', 'warn');
   });
 
-if (import.meta.env.DEV) Object.assign(window, { debug: { globe, models, getLayer: () => layer } });
+if (import.meta.env.DEV) Object.assign(window, { debug: { globe, models, getLayer: () => layer, getConj: () => conj } });

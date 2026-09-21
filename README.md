@@ -20,6 +20,11 @@ presented as a 1980s amber-phosphor orbital surveillance terminal.
 - **Target dossier**: click any satellite for an intel-style panel with owner country and flag, launch date and site, operational status, radar size, a photo and briefing from Wikipedia, and live telemetry (including whether it's in sunlight or Earth's shadow)
 - **Close-up tracking**: the camera flies to the selected satellite and orbits around it. Zoom in and nearby spacecraft turn from dots into 3D models: NASA models for the ISS, Hubble, Aqua, Aura, Landsat, GOES, TDRS and ~20 more missions; NASA's SSL-1300 bus for geostationary comsats and a NASA CubeSat for small sats; procedural models for Starlink, Tiangong and the rest. The dossier says which model is shown and whether it is exact or representative
 - **An image for every satellite**: its own Wikipedia photo, otherwise its programme's (e.g. Starlink), otherwise one for its type of spacecraft, labelled as representative
+- **Conjunction watch**: every tracked object (~16,000 satellites plus ~2,700 debris fragments from the four largest
+  break-ups) is screened against every other for passes closer than 5 km over the next 6–24 hours, in parallel Web
+  Workers (~6 s for 24 h on an 8-core machine). Pick an encounter to rewind the clock to just before it, watch both
+  objects close in with a live range readout, and hold at the exact moment of closest approach
+- **Shareable links**: `#norad=25544` opens a satellite; `#norad=A&with=B&t=<ISO time>` opens a specific close approach
 - Search by name or NORAD ID, filter by constellation, and fast-forward time up to 1000×
 
 ## Running locally
@@ -41,6 +46,8 @@ npm run dev
 | `src/earthShader.ts` | Day/night Earth shading with city lights, ocean glint and limb haze |
 | `src/earthTiles.ts` | Quadtree level-of-detail streaming of NASA GIBS imagery tiles |
 | `src/nasaModels.ts` | Satellite → NASA model mapping, lazy glTF loading and instancing |
+| `src/conjunctions.ts` | Splits close-approach screening across parallel workers and merges the results |
+| `src/conjunctionWorker.ts` | The screening itself: grid sieve, linear closest-approach test, SGP4 refinement |
 | `src/satellites.ts` | Satellite point cloud, propagation, screen-space picking, orbit paths |
 | `src/main.ts` | Simulated clock, gauges, search, dossier, camera flights and tracking |
 | `src/terminal.ts` | Text-mode widgets: block bars, sparklines, event log, radar sweep |
@@ -67,6 +74,16 @@ one of its texels would cover more than ~1.3 screen pixels. Tiles over the horiz
 frustum are skipped, and a tile that is still downloading is replaced by its nearest loaded ancestor. A
 low-resolution globe sits 6 km underneath to cover the poles and any gaps.
 
+**Close-approach screening.** Every 60 s of the window, each object is propagated with SGP4 and dropped into
+a 3D grid whose cells are the furthest two objects could close in half a step (5 km + 16 km/s × 30 s). Only
+pairs in neighbouring cells are compared, using their straight-line relative motion over the half-step (two
+nearby objects feel almost the same gravity, so their relative motion is close to straight even though each
+orbit curves). Candidates are refined with a golden-section search on the exact SGP4 separation. Pairs with
+under 100 m/s relative speed (docked vehicles, formation flyers) are dropped, and pairs inside one operator's
+constellation are skipped by default: Starlink members are kept in a separate list per cell and never compared
+with each other, which removes most of the work. The window is split into time slices screened in parallel.
+Public TLEs are accurate to roughly a kilometre, so miss distances are indicative rather than operational.
+
 ## Credits
 
 - Orbital elements and satellite catalogue: [CelesTrak](https://celestrak.org)
@@ -79,5 +96,4 @@ low-resolution globe sits 6 km underneath to cover the poles and any gaps.
 
 - Pass predictions: "when is the ISS next visible from my location?"
 - Ground track and sensor footprint for the selected satellite
-- Debris layer and conjunction (close-approach) detection
 - Deep-link URLs to a selected satellite

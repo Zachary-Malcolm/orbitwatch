@@ -8,7 +8,7 @@ import { matchModel, NASA_MODEL_NAMES, NasaModelLayer, type ModelMatch } from '.
 // Real spacecraft are far too small to see at planetary scale, so models are drawn at a
 // size measured in screen pixels that grows as the camera closes in.
 
-type Kind = 'station' | 'tiangong' | 'starlink' | 'navigation' | 'generic';
+type Kind = 'station' | 'tiangong' | 'starlink' | 'navigation' | 'generic' | 'debris';
 
 const MAX_INSTANCES = 400;
 /** Satellites closer to the camera than this (in Earth radii, ~5,700 km) become models. */
@@ -109,7 +109,7 @@ function station() {
 }
 
 /** Stations are the showpiece, so draw them larger than the rest. */
-const KIND_SCALE: Record<Kind, number> = { station: 1.7, tiangong: 1.5, starlink: 1, navigation: 1.1, generic: 1 };
+const KIND_SCALE: Record<Kind, number> = { station: 1.7, tiangong: 1.5, starlink: 1, navigation: 1.1, generic: 1, debris: 0.55 };
 
 function tiangong() {
   // Tiangong: the Tianhe core with Wentian and Mengtian docked either side in a T,
@@ -130,6 +130,15 @@ function tiangong() {
 /** ~10 km, in Earth radii. */
 const DOCKED_RANGE = 0.0016;
 
+function debrisFragment() {
+  // A twisted shard of structure: a torn panel, a strut and a crumpled chunk.
+  return build([
+    part(box(0.5, 0.03, 0.28), DARK, 0, 0, 0, new THREE.Euler(0.4, 0.3, 0.2)),
+    part(cyl(0.02, 0.02, 0.55), SILVER, 0.1, 0.05, 0.05, new THREE.Euler(1.1, 0, 0.7)),
+    part(box(0.16, 0.14, 0.12), FOIL, -0.18, 0.06, -0.04, new THREE.Euler(0.6, 0.9, 0.3)),
+  ]);
+}
+
 const KIND_OF: Record<Category, Kind> = {
   station: 'station',
   starlink: 'starlink',
@@ -137,6 +146,7 @@ const KIND_OF: Record<Category, Kind> = {
   oneweb: 'generic',
   earth: 'generic',
   other: 'generic',
+  debris: 'debris',
 };
 
 /** On-screen size of a model in pixels at camera distance `d` (0 when out of range). */
@@ -165,6 +175,7 @@ const PROCEDURAL_NAMES: Record<Kind, string> = {
   starlink: 'Starlink satellite',
   navigation: 'Navigation satellite',
   generic: 'Generic satellite',
+  debris: 'Debris fragment',
 };
 
 export class ModelLayer {
@@ -200,6 +211,7 @@ export class ModelLayer {
       starlink: make(starlink()),
       navigation: make(navigation()),
       generic: make(genericSat()),
+      debris: make(debrisFragment()),
     };
   }
 

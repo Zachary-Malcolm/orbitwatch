@@ -86,7 +86,12 @@ async function fetchCatalog(noradId: string): Promise<CatalogInfo | null> {
 }
 
 // Mega-constellation members rarely have their own article; fall back to the programme's.
+// Debris fragments get the article on the event that created them (listed first, so
+// "IRIDIUM 33 DEB" finds the 2009 collision rather than the Iridium constellation).
 const PROGRAMME_ARTICLES: [RegExp, string][] = [
+  [/^FENGYUN 1C/, '2007_Chinese_anti-satellite_missile_test'],
+  [/^COSMOS 2251|^IRIDIUM 33/, '2009_satellite_collision'],
+  [/^COSMOS 1408/, '2021_Russian_anti-satellite_missile_test'],
   [/^STARLINK/, 'Starlink'],
   [/^ONEWEB/, 'Eutelsat_OneWeb'],
   [/^KUIPER/, 'Project_Kuiper'],
@@ -111,6 +116,7 @@ const PROGRAMME_ARTICLES: [RegExp, string][] = [
 function typeArticle(sat: SatInfo): string {
   if (/CUBESAT|^FLOCK|^LEMUR|^DOVE/.test(sat.name)) return 'CubeSat';
   if (sat.category === 'station') return 'Space_station';
+  if (sat.category === 'debris') return 'Space_debris';
   if (sat.category === 'navigation') return 'Satellite_navigation';
   if (sat.category === 'earth') return 'Earth_observation_satellite';
   const periodMin = (2 * Math.PI) / sat.satrec.no;

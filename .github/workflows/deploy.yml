@@ -41,6 +41,18 @@ jobs:
           grep -q '^1 ' public/data/active.tle
           echo "{\"fetchedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/data/active.json
           echo "Mirrored $(grep -c '^1 ' public/data/active.tle) element sets"
+      # Debris clouds from the four largest break-ups (keep in sync with DEBRIS_GROUPS in src/tle.ts).
+      - name: Fetch debris catalogue
+        continue-on-error: true
+        run: |
+          : > public/data/debris.tle
+          for g in fengyun-1c-debris cosmos-2251-debris iridium-33-debris cosmos-1408-debris; do
+            curl -fsS --retry 3 -A "OrbitWatch (github.com/${{ github.repository }})" \
+              "https://celestrak.org/NORAD/elements/gp.php?GROUP=$g&FORMAT=tle" >> public/data/debris.tle
+          done
+          grep -q '^1 ' public/data/debris.tle
+          echo "{\"fetchedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/data/debris.json
+          echo "Mirrored $(grep -c '^1 ' public/data/debris.tle) debris objects"
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

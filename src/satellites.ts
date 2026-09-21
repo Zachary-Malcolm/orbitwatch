@@ -16,6 +16,7 @@ export const CATEGORIES: Record<Category, { label: string; color: string; glyph:
   navigation: { label: 'Navigation (GPS, Galileo…)', color: '#39ff14', glyph: '✚', shape: 2, size: 7 },
   earth: { label: 'Earth observation & weather', color: '#ff5fa2', glyph: '▲', shape: 3, size: 6 },
   other: { label: 'Other', color: '#8fa3b8', glyph: '○', shape: 5, size: 5 },
+  debris: { label: 'Debris (major break-ups)', color: '#e05252', glyph: '×', shape: 6, size: 5 },
 };
 
 const glyphVertex = /* glsl */ `
@@ -34,7 +35,7 @@ const glyphVertex = /* glsl */ `
   }
 `;
 
-// 0 dot, 1 hollow square, 2 plus, 3 triangle, 4 diamond, 5 ring.
+// 0 dot, 1 hollow square, 2 plus, 3 triangle, 4 diamond, 5 ring, 6 cross.
 // Each glyph gets a dark outline so it reads against a bright Earth as well as black space.
 const glyphFragment = /* glsl */ `
   varying vec3 vColor;
@@ -48,7 +49,8 @@ const glyphFragment = /* glsl */ `
     if (vShape < 2.5) return min(abs(p.x), abs(p.y)) < 0.28 && box < 1.0;
     if (vShape < 3.5) return p.y > -0.8 && abs(p.x) < (0.8 - p.y) * 0.62;
     if (vShape < 4.5) return abs(p.x) + abs(p.y) < 1.0;
-    return r < 1.0 && r > 0.55;
+    if (vShape < 5.5) return r < 1.0 && r > 0.55;
+    return abs(abs(p.x) - abs(p.y)) < 0.32 && box < 1.0;
   }
 
   void main() {
@@ -116,6 +118,14 @@ export class SatelliteLayer implements ModelSource {
   private readonly orbitLine: THREE.Line;
   private readonly nadirLine: THREE.Line;
   private orbitComputedAt = 0;
+
+  /** The other object in a close-approach encounter, shown alongside the selected one. */
+  secondary = -1;
+  private readonly marker2: THREE.Sprite;
+  private readonly orbitLine2: THREE.Line;
+  /** Straight line joining the two encounter objects: the miss vector at closest approach. */
+  private readonly missLine: THREE.Line;
+  private orbit2ComputedAt = 0;
 
   private readonly tmp = new THREE.Vector3();
 
@@ -185,6 +195,30 @@ export class SatelliteLayer implements ModelSource {
     this.nadirLine.visible = false;
     this.nadirLine.frustumCulled = false;
     scene.add(this.nadirLine);
+
+    this.marker2 = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: ringTexture(), sizeAttenuation: false, depthTest: false, transparent: true }),
+    );
+    this.marker2.scale.setScalar(0.03);
+    this.marker2.visible = false;
+    this.marker2.renderOrder = 10;
+    scene.add(this.marker2);
+
+    this.orbitLine2 = new THREE.Line(
+      new THREE.BufferGeometry(),
+      new THREE.LineDashedMaterial({ dashSize: 0.02, gapSize: 0.012, transparent: true, opacity: 0.7 }),
+    );
+    this.orbitLine2.visible = false;
+    scene.add(this.orbitLine2);
+
+    this.missLine = new THREE.Line(
+      new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3)),
+      new THREE.LineBasicMaterial({ color: '#ff3333', depthTest: false, transparent: true }),
+    );
+    this.missLine.visible = false;
+    this.missLine.frustumCulled = false;
+    this.missLine.renderOrder = 11;
+    scene.add(this.missLine);
   }
 
   /** Glyph colours are the same in both modes; only the target lines change (red in phosphor mode). */
@@ -194,10 +228,17 @@ export class SatelliteLayer implements ModelSource {
   }
 
   private applyLineColors() {
-    if (this.selected < 0) return;
-    const color = this.visualMode === 'phosphor' ? '#ff3333' : CATEGORIES[this.sats[this.selected].category].color;
-    (this.orbitLine.material as THREE.LineBasicMaterial).color.set(color);
-    (this.nadirLine.material as THREE.LineDashedMaterial).color.set(color);
+    const phosphor = this.visualMode === 'phosphor';
+    if (this.selected >= 0) {
+      const color = phosphor ? '#ff3333' : CATEGORIES[this.sats[this.selected].category].color;
+      (this.orbitLine.material as THREE.LineBasicMaterial).color.set(color);
+      (this.nadirLine.material as THREE.LineDashedMaterial).color.set(color);
+    }
+    if (this.secondary >= 0) {
+      // Bright but not red, so the phosphor pass renders it as hot amber: distinct from the target's red orbit.
+      const color = phosphor ? '#ffffff' : CATEGORIES[this.sats[this.secondary].category].color;
+      (this.orbitLine2.material as THREE.LineDashedMaterial).color.set(color);
+    }
   }
 
   /** Orbit regime counts for the census display. */
@@ -281,18 +322,64 @@ export class SatelliteLayer implements ModelSource {
       line.setXYZ(1, ground.x, ground.y, ground.z);
       line.needsUpdate = true;
       this.nadirLine.computeLineDistances();
-      if (Math.abs(simMs - this.orbitComputedAt) > 20_000) this.computeOrbit(simMs);
+      if (Math.abs(simMs - this.orbitComputedAt) > 20_000) {
+        this.computeOrbit(sel, this.orbitLine, simMs);
+        this.orbitComputedAt = simMs;
+      }
     } else {
       this.marker.visible = this.orbitLine.visible = this.nadirLine.visible = false;
+    }
+
+    const sec = this.secondary;
+    const showSecondary = sec >= 0 && valid[sec] === 1 && !this.hidden.has(this.sats[sec].category);
+    this.marker2.visible = this.orbitLine2.visible = showSecondary;
+    this.missLine.visible = showSecondary && this.marker.visible;
+    if (showSecondary) {
+      this.marker2.position.fromArray(positions, sec * 3);
+      const line = this.missLine.geometry.attributes.position as THREE.BufferAttribute;
+      line.setXYZ(0, this.marker.position.x, this.marker.position.y, this.marker.position.z);
+      line.setXYZ(1, this.marker2.position.x, this.marker2.position.y, this.marker2.position.z);
+      line.needsUpdate = true;
+      if (Math.abs(simMs - this.orbit2ComputedAt) > 20_000) {
+        this.computeOrbit(sec, this.orbitLine2, simMs);
+        this.orbitLine2.computeLineDistances();
+        this.orbit2ComputedAt = simMs;
+      }
     }
   }
 
   select(index: number, simMs: number) {
     this.selected = index;
+    if (index < 0) this.secondary = -1;
     if (index >= 0) {
       this.applyLineColors();
-      this.computeOrbit(simMs);
+      this.computeOrbit(index, this.orbitLine, simMs);
+      this.orbitComputedAt = simMs;
     }
+  }
+
+  /** Show a second object alongside the selection (a close-approach partner), or -1 to clear. */
+  setSecondary(index: number, simMs: number) {
+    this.secondary = index;
+    if (index < 0) return;
+    this.applyLineColors();
+    this.computeOrbit(index, this.orbitLine2, simMs);
+    this.orbitLine2.computeLineDistances();
+    this.orbit2ComputedAt = simMs;
+  }
+
+  /** Exact SGP4 separation (km) and relative speed (km/s) between two objects. */
+  separation(i: number, j: number, simMs: number): { km: number; kms: number } | null {
+    const date = new Date(simMs);
+    const a = propagate(this.sats[i].satrec, date);
+    const b = propagate(this.sats[j].satrec, date);
+    if (!a || !b) return null;
+    const { position: pa, velocity: va } = a;
+    const { position: pb, velocity: vb } = b;
+    return {
+      km: Math.hypot(pb.x - pa.x, pb.y - pa.y, pb.z - pa.z),
+      kms: Math.hypot(vb.x - va.x, vb.y - va.y, vb.z - va.z),
+    };
   }
 
   positionOf(index: number, out: THREE.Vector3): THREE.Vector3 {
@@ -384,8 +471,8 @@ export class SatelliteLayer implements ModelSource {
     this.valid[i] = 1;
   }
 
-  private computeOrbit(simMs: number) {
-    const { satrec } = this.sats[this.selected];
+  private computeOrbit(index: number, target: THREE.Line, simMs: number) {
+    const { satrec } = this.sats[index];
     const periodMs = ((2 * Math.PI) / satrec.no) * 60_000;
     const steps = 256;
     const pts: THREE.Vector3[] = [];
@@ -393,9 +480,8 @@ export class SatelliteLayer implements ModelSource {
       const pv = propagate(satrec, new Date(simMs + (k / steps) * periodMs));
       if (pv) pts.push(eciToScene(pv.position.x, pv.position.y, pv.position.z, new THREE.Vector3()));
     }
-    this.orbitLine.geometry.dispose();
-    this.orbitLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
-    this.orbitComputedAt = simMs;
+    target.geometry.dispose();
+    target.geometry = new THREE.BufferGeometry().setFromPoints(pts);
   }
 }
 
