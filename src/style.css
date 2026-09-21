@@ -18,6 +18,14 @@
   --feed: #5aa9ff;
   --feed-dim: rgba(90, 169, 255, 0.6);
   --feed-glow: 0 0 3px rgba(90, 169, 255, 0.55);
+  /* The two other classic CRT phosphors, used as secondary accents alongside amber (P3):
+     P1 green for gauges and progress bars, P4 warm white for the time controls. */
+  --p1: #56ff8a;
+  --p1-dim: rgba(86, 255, 138, 0.3);
+  --p1-glow: 0 0 3px rgba(86, 255, 138, 0.55);
+  --p4: #f4ecdc;
+  --p4-dim: rgba(244, 236, 220, 0.45);
+  --p4-glow: 0 0 3px rgba(244, 236, 220, 0.5);
   --glow: 0 0 3px rgba(255, 176, 0, 0.55);
   --term: 'Share Tech Mono', 'Courier New', monospace;
   --pixel: 'VT323', 'Courier New', monospace;
@@ -122,9 +130,9 @@ html, body {
 .dim { color: var(--amber-mid); }
 
 /* Segmented block bars, drawn as text: [■■■■■□□□□□] */
-.bar { letter-spacing: 1px; white-space: nowrap; overflow: hidden; }
-.bar .on { color: var(--amber); }
-.bar .off { color: var(--amber-dim); text-shadow: none; }
+.bar { letter-spacing: 1px; white-space: nowrap; overflow: hidden; color: var(--p1-dim); }
+.bar .on { color: var(--p1); text-shadow: var(--p1-glow); }
+.bar .off { color: var(--p1-dim); text-shadow: none; }
 .bar.warn .on, .warn { color: var(--warn); text-shadow: 0 0 3px rgba(255, 51, 51, 0.6); }
 
 pre { margin: 0; font: inherit; }
@@ -377,7 +385,8 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 #log::after { content: '█'; animation: blink 1s steps(1) infinite; }
 
 .chrono .big { font: 400 46px/1 var(--pixel); letter-spacing: 0.04em; }
-.speeds button { padding: 3px 0; }
+.speeds button { padding: 3px 0; color: var(--p4); border-color: var(--p4-dim); text-shadow: var(--p4-glow); }
+.speeds button:hover, .speeds button.active { background: var(--p4); border-color: var(--p4); color: var(--bg); text-shadow: none; }
 
 /* ---------- Tooltip ---------- */
 #tooltip {
