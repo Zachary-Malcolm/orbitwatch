@@ -25,6 +25,7 @@ import { fetchIntel, type CatalogInfo, type WikiInfo } from './intel';
 import { loadDebris, loadSatellites, type Category, type SatInfo } from './tle';
 import { isIntraConstellation, screenConjunctions, severity, type Conjunction, type ScreenResult } from './conjunctions';
 import { latency, log } from './telemetry';
+import { latestNews, newsFor, timeAgo, type Article, type ObjectNews } from './news';
 import { blocks, mountLog, radarFrame, Sparkline } from './terminal';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -237,6 +238,9 @@ function select(index: number, keepEncounter = false) {
     showCatalog(c);
     if (c) log('SATCAT', `${sat.noradId} · ${c.owner.code} · ${c.objectType} · ${c.status}`);
   });
+  intel.wiki
+    .then((w) => newsFor(sat, w))
+    .then((n) => layer?.selected === index && showObjectNews(n));
   intel.wiki.then((w) => {
     if (layer?.selected !== index) return;
     showWiki(w);
@@ -386,21 +390,23 @@ function updateObserverReadouts(sim: number) {
 }
 
 // ---- Right-column tabs ---------------------------------------------------------
-let tab: 'target' | 'conj' = 'target';
+type Tab = 'target' | 'conj' | 'news';
+let tab: Tab = 'target';
 
-function showTab(next: 'target' | 'conj') {
+function showTab(next: Tab) {
   tab = next;
   const sel = layer?.selected ?? -1;
   document.querySelectorAll<HTMLButtonElement>('#right-tabs button').forEach((b) => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
   $('conj').hidden = tab !== 'conj';
+  $('news').hidden = tab !== 'news';
   $('details').hidden = tab !== 'target' || sel < 0;
   $('standby').hidden = tab !== 'target' || sel >= 0;
 }
 
 $('right-tabs').addEventListener('click', (e) => {
-  const next = (e.target as HTMLElement).closest('button')?.dataset.tab as 'target' | 'conj' | undefined;
+  const next = (e.target as HTMLElement).closest('button')?.dataset.tab as Tab | undefined;
   if (next) showTab(next);
 });
 
@@ -654,6 +660,8 @@ function resetIntel() {
   $('d-figure').hidden = true;
   $('d-wiki').hidden = true;
   $('d-about-title').textContent = 'BRIEFING';
+  $('d-news-title').textContent = 'NEWS';
+  $('d-news').innerHTML = '<li class="empty">SEARCHING NEWS UPLINK…</li>';
 }
 
 function showCatalog(c: CatalogInfo | null) {
@@ -764,6 +772,96 @@ function formatCospar(designator: string): string {
   const yy = Number(designator.slice(0, 2));
   if (Number.isNaN(yy)) return designator;
   return `${yy < 57 ? 2000 + yy : 1900 + yy}-${designator.slice(2)}`;
+}
+
+// ---- News ------------------------------------------------------------------------
+// The ticker types out the latest headlines one at a time; the NEWS tab lists them; the
+// dossier shows news about the selected object. New stories are polled every 5 minutes.
+const NEWS_POLL_MS = 5 * 60_000;
+let feed: Article[] = [];
+const seenArticles = new Set<number>();
+const arrivedLive = new Set<number>();
+
+/** Fresh = published in the last hour, or arrived since this page was opened. */
+const isFresh = (a: Article) => arrivedLive.has(a.id) || Date.now() - a.publishedMs < 3_600_000;
+
+function newsItem(a: Article, withSummary: boolean): HTMLLIElement {
+  const li = document.createElement('li');
+  const link = Object.assign(document.createElement('a'), { href: a.url, target: '_blank', rel: 'noopener' });
+  const meta = Object.assign(document.createElement('span'), { className: 'meta', textContent: `${timeAgo(a.publishedMs)} · ${a.site}` });
+  if (isFresh(a)) meta.append(Object.assign(document.createElement('span'), { className: 'new', textContent: ' · ◉ NEW' }));
+  link.append(meta, Object.assign(document.createElement('span'), { className: 'ttl', textContent: a.title }));
+  if (withSummary && a.summary) link.append(Object.assign(document.createElement('span'), { className: 'sum', textContent: a.summary }));
+  li.append(link);
+  return li;
+}
+
+function renderFeed() {
+  const list = $('news-list');
+  list.replaceChildren(...feed.map((a) => newsItem(a, true)));
+  if (!feed.length) list.innerHTML = '<li class="empty">NEWS UPLINK UNAVAILABLE</li>';
+  $('news-count').textContent = String(feed.filter(isFresh).length || feed.length);
+}
+
+async function refreshNews() {
+  try {
+    const latest = await latestNews(20);
+    if (!latest.length) throw new Error('empty');
+    const incoming = latest.filter((a) => !seenArticles.has(a.id));
+    const firstSync = seenArticles.size === 0;
+    for (const a of incoming) {
+      seenArticles.add(a.id);
+      if (!firstSync) {
+        arrivedLive.add(a.id);
+        log('NEWS', `${a.site} · ${a.title}`, 'ok');
+      }
+    }
+    if (firstSync) log('NEWS', `UPLINK ESTABLISHED · ${latest.length} STORIES · LATEST ${timeAgo(latest[0].publishedMs)}`);
+    feed = latest;
+    $('news-sync').textContent = new Date().toISOString().slice(11, 19) + ' UTC';
+    renderFeed();
+  } catch {
+    log('NEWS', 'NEWS UPLINK UNAVAILABLE · WILL RETRY', 'warn');
+  }
+}
+
+// Teletype: type the headline a character at a time, hold it, then move to the next.
+let tickerIndex = -1;
+let tickerChars = 0;
+let tickerHoldUntil = 0;
+setInterval(() => {
+  if (!feed.length) return;
+  const now = performance.now();
+  const current = feed[tickerIndex];
+  if (!current || (tickerChars >= current.title.length && now > tickerHoldUntil)) {
+    tickerIndex = (tickerIndex + 1) % Math.min(feed.length, 12);
+    tickerChars = 0;
+    const next = feed[tickerIndex];
+    const ticker = $<HTMLAnchorElement>('ticker');
+    ticker.href = next.url;
+    ticker.classList.toggle('fresh', isFresh(next));
+    ticker.querySelector('.tk-tag')!.textContent = isFresh(next) ? '◉ NEW' : next.site.toUpperCase();
+    return;
+  }
+  if (tickerChars < current.title.length) {
+    tickerChars = Math.min(current.title.length, tickerChars + 2);
+    $('ticker-text').textContent = current.title.slice(0, tickerChars);
+    if (tickerChars === current.title.length) tickerHoldUntil = now + 7000;
+  }
+}, 40);
+
+refreshNews();
+setInterval(refreshNews, NEWS_POLL_MS);
+
+function showObjectNews(n: ObjectNews | null) {
+  const list = $('d-news');
+  if (!n) {
+    $('d-news-title').textContent = 'NEWS';
+    list.innerHTML = '<li class="empty">NO SPECIFIC COVERAGE FOR THIS OBJECT</li>';
+    return;
+  }
+  $('d-news-title').textContent = `NEWS · ${n.topic}${n.programme ? ' PROGRAMME' : ''}`;
+  list.replaceChildren(...n.articles.slice(0, 5).map((a) => newsItem(a, false)));
 }
 
 // ---- Visual mode ---------------------------------------------------------------

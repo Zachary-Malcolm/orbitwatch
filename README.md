@@ -48,6 +48,10 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
   in the browser) to list the locked target's passes over the next 3 days, with rise/peak/set times and directions in
   local time, a countdown, and a ☼ VISIBLE flag when it can be seen with the naked eye. The station shows on the globe
   with a line-of-sight beam while the target is above its horizon, and the event log records AOS/LOS as it rises and sets
+- **News uplink**: a teletype ticker of the latest spaceflight headlines, a NEWS tab, and new stories in the event log
+  (polled every 5 minutes from the [Spaceflight News API](https://spaceflightnewsapi.net), ~40 outlets). Each dossier
+  also shows news about that object: by its common name (the ISS, Hubble, Tiangong…), otherwise its constellation
+  (e.g. the Starlink programme), and says so when an object has no coverage rather than showing unrelated stories
 - **Shareable links**: `#norad=25544` opens a satellite; `#norad=A&with=B&t=<ISO time>` opens a specific close approach
 - Search by name or NORAD ID, filter by constellation, and fast-forward time up to 1000×
 
@@ -75,6 +79,7 @@ Chrome through Playwright (see `scripts/capture-readme.mjs`).
 | `src/nasaModels.ts` | Satellite → NASA model mapping, lazy glTF loading and instancing |
 | `src/groundTrack.ts` | Ground track and coverage footprint, drawn in the Earth-fixed frame |
 | `src/observer.ts` | Observer station, look angles, pass prediction and visibility, globe marker and beam |
+| `src/news.ts` | Latest headlines and per-object news search (Spaceflight News API) |
 | `src/conjunctions.ts` | Splits close-approach screening across parallel workers and merges the results |
 | `src/conjunctionWorker.ts` | The screening itself: grid sieve, linear closest-approach test, SGP4 refinement |
 | `src/satellites.ts` | Satellite point cloud, propagation, screen-space picking, orbit paths |
@@ -131,6 +136,7 @@ Public TLEs are accurate to roughly a kilometre, so miss distances are indicativ
 - Spacecraft models: [NASA 3D Resources](https://github.com/nasa/NASA-3D-Resources), compressed with glTF-Transform
 - Photos and briefings: Wikipedia / Wikimedia Commons via the Wikipedia REST API and Wikidata
 - Flags: [flagcdn.com](https://flagcdn.com)
+- News: [Spaceflight News API](https://spaceflightnewsapi.net) by The Space Devs; headlines link to the original articles
 
 ## Roadmap ideas
 

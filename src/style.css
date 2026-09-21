@@ -433,6 +433,9 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
   .col { overflow: visible; }
   .bottom { grid-template-columns: minmax(0, 1fr); grid-template-rows: 200px auto; }
   .hide-sm { display: none; }
+  /* No room for the ticker in a narrow status bar; the NEWS tab still has everything. */
+  .ticker { display: none; }
+  .statusbar { justify-content: space-between; }
   .hud.tl, .hud.bl, .hud.br { display: none; }
   .hud.tr { right: 12px; }
 }
@@ -500,3 +503,41 @@ body.picking #globe canvas { cursor: crosshair !important; }
 .pass-list .vis { color: #fff; text-shadow: 0 0 4px rgba(255, 255, 255, 0.7); }
 .pass-list li.low .when { color: var(--amber-mid); }
 #p-body[hidden], #p-none[hidden] { display: none; }
+
+/* ---------- News: ticker, NEWS tab, dossier section ---------- */
+.ticker {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--amber);
+  text-decoration: none;
+}
+.ticker:hover #ticker-text { text-decoration: underline; }
+.tk-tag { padding: 0 5px; background: var(--amber); color: var(--bg); text-shadow: none; flex: none; }
+.ticker.fresh .tk-tag { background: var(--warn); }
+#ticker-text { overflow: hidden; text-overflow: ellipsis; }
+.tk-cursor { animation: blink 1s steps(1) infinite; flex: none; }
+.newsfeed[hidden] { display: none; }
+.news-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.news-list li { border-top: 1px dashed var(--amber-dim); }
+.news-list li.empty { padding: 4px 0; color: var(--amber-mid); border: none; }
+.news-list a { display: block; padding: 5px 5px; color: var(--amber); text-decoration: none; }
+.news-list a:hover { background: var(--amber); color: var(--bg); text-shadow: none; }
+.news-list a:hover * { color: var(--bg) !important; }
+.news-list .meta { display: block; font-size: 11px; color: var(--amber-mid); }
+.news-list .meta .new { color: var(--warn); }
+.news-list .ttl { display: block; }
+.news-list .sum {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 12px;
+  text-transform: none;
+  color: var(--amber-mid);
+}

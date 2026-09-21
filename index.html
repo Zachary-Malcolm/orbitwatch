@@ -15,7 +15,9 @@
         <span class="dim hide-sm">ORBITAL SURVEILLANCE TERMINAL // MK-II</span>
         <span class="sb-item hide-sm">LINK <b id="sb-link" class="blink-slow">■ ACQUIRING</b></span>
         <span class="sb-item hide-sm">SESSION <b id="sb-uptime">00:00:00</b></span>
-        <span class="sb-spacer"></span>
+        <a class="ticker" id="ticker" target="_blank" rel="noopener" title="Latest spaceflight news (opens the article)">
+          <span class="tk-tag">NEWS</span><span id="ticker-text"></span><span class="tk-cursor">█</span>
+        </a>
         <span class="sb-item"><b id="utc">----.--.-- --:--:--</b> UTC</span>
         <span id="live-badge" class="badge">● LIVE</span>
       </header>
@@ -115,8 +117,16 @@
       <aside class="col right">
         <div class="tabs" id="right-tabs">
           <button data-tab="target" class="active">TARGET</button>
-          <button data-tab="conj">CLOSE APPROACHES <b id="conj-count">··</b></button>
+          <button data-tab="conj">APPROACHES <b id="conj-count">··</b></button>
+          <button data-tab="news">NEWS <b id="news-count">··</b></button>
         </div>
+
+        <section class="mod newsfeed" id="news" hidden>
+          <h2><span>NEWS UPLINK</span><i>12</i></h2>
+          <div class="row"><label>SOURCE</label><b>SPACEFLIGHT NEWS API · ~40 OUTLETS</b></div>
+          <div class="row"><label>LAST SYNC</label><b id="news-sync">--</b></div>
+          <ol id="news-list" class="news-list"></ol>
+        </section>
 
         <section class="mod conj" id="conj" hidden>
           <h2><span>CONJUNCTION WATCH</span><i>10</i></h2>
@@ -207,6 +217,9 @@
           <h4 id="d-about-title">BRIEFING</h4>
           <p class="about loading" id="d-about"></p>
           <a class="wiki-link" id="d-wiki" target="_blank" rel="noopener" hidden></a>
+
+          <h4 id="d-news-title">NEWS</h4>
+          <ol id="d-news" class="news-list"></ol>
 
           <div class="btn-row">
             <button id="copy-link">[ COPY LINK ]</button>
