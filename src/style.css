@@ -583,6 +583,12 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 @media (max-width: 900px) {
   .hud.bc { bottom: 72px; } /* above the timeline strip */
 }
+/* Narrow phones: the display switches would run off the left edge, so drop their small labels (the
+   buttons name themselves) and wrap onto a second line rather than clip on the very narrowest screens. */
+@media (max-width: 480px) {
+  .hud.tr { right: 12px; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: flex-end; }
+  .hud.tr > span { display: none; }
+}
 #d-encounter[hidden] { display: none; }
 
 /* ---------- Observer station & passes ---------- */
