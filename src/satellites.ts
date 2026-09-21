@@ -73,6 +73,8 @@ const glyphFragment = /* glsl */ `
 const MU = 398600.4418; // km^3 / s^2
 // Time spent per frame running full SGP4. Everything in between is extrapolated.
 const PROPAGATION_BUDGET_MS = 4;
+/** A clock change bigger than this (a scrub, or a jump to a pass or encounter) re-propagates everything at once. */
+const JUMP_MS = 120_000;
 
 export interface SatDetails {
   latitude: number;
@@ -117,7 +119,7 @@ export class SatelliteLayer implements ModelSource {
   /** Full SGP4 runs since the counter was last reset (read by the performance gauges). */
   propagated = 0;
   private cursor = 0;
-  private primed = false;
+  private lastSimMs = NaN;
 
   readonly marker: THREE.Sprite;
   private readonly orbitLine: THREE.Line;
@@ -293,9 +295,12 @@ export class SatelliteLayer implements ModelSource {
   update(simMs: number) {
     const date = new Date(simMs);
 
-    // First frame: propagate everything once so no satellite starts at the origin.
-    const budget = this.primed ? PROPAGATION_BUDGET_MS : Infinity;
-    this.primed = true;
+    // Normally only a slice of the catalogue gets a fresh SGP4 solution each frame and the rest are
+    // extrapolated from their last one. On the first frame, or after the clock jumps, those solutions
+    // are too far away to extrapolate from, so propagate everything at once instead.
+    const jumped = !(Math.abs(simMs - this.lastSimMs) < JUMP_MS);
+    this.lastSimMs = simMs;
+    const budget = jumped ? Infinity : PROPAGATION_BUDGET_MS;
     const start = performance.now();
     let done = 0;
     while (done < this.n && performance.now() - start < budget) {

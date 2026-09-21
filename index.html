@@ -239,6 +239,12 @@
         <section class="mod chrono">
           <h2><span>CHRONO CONTROL</span><i>08</i></h2>
           <div class="big" id="sim-time">--:--:--</div>
+          <div class="timeline">
+            <div class="scrub-marks" id="scrub-marks" aria-hidden="true"></div>
+            <input type="range" id="scrub" min="0" max="1440" step="1" value="0"
+              title="Drag to move through the next 24 hours" aria-label="Simulated time, from now to 24 hours ahead" />
+            <div class="scrub-scale" aria-hidden="true"><span>NOW</span><span>+6H</span><span>+12H</span><span>+18H</span><span>+24H</span></div>
+          </div>
           <div class="row"><label>SIM DATE</label><b id="sim-date">--</b></div>
           <div class="row"><label>OFFSET FROM NOW</label><b id="sim-offset">+00:00:00</b></div>
           <div class="btn-row speeds" id="speeds">

@@ -11,6 +11,7 @@ import {
   sunElevation,
   MIN_PASS_ELEVATION_DEG,
   type Observer,
+  type Pass,
   type PassForecast,
 } from '../observer';
 import { log } from '../telemetry';
@@ -29,6 +30,8 @@ let picking = false;
 let lastAbove: boolean | null = null;
 
 export const getObserver = () => observer;
+/** The locked target's predicted passes over the station (empty if there's no station or target). */
+export const currentPasses = (): Pass[] => (forecast?.kind === 'passes' ? forecast.passes : []);
 /** True while the next click on the globe places the station. */
 export const isPicking = () => picking;
 

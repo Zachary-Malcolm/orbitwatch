@@ -386,6 +386,56 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 
 .chrono .big { font: 400 46px/1 var(--pixel); letter-spacing: 0.04em; }
 .speeds button { padding: 3px 0; }
+
+/* Timeline: a range input in the time controls' P4 white, over hour ticks, with the locked target's
+   passes marked above it (brighter when visible to the naked eye). */
+.timeline { position: relative; margin-top: 6px; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 12px;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, var(--p4-dim) 0 1px, transparent 1px calc(100% / 24));
+  border-right: 1px solid var(--p4-dim);
+  pointer-events: none;
+}
+#scrub {
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+  appearance: none;
+}
+#scrub::-webkit-slider-runnable-track { height: 1px; background: var(--p4-dim); }
+#scrub::-moz-range-track { height: 1px; background: var(--p4-dim); }
+#scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 16px;
+  margin-top: -8px;
+  border: none;
+  background: var(--p4);
+  box-shadow: var(--p4-glow);
+}
+#scrub::-moz-range-thumb { width: 8px; height: 16px; border: none; border-radius: 0; background: var(--p4); box-shadow: var(--p4-glow); }
+#scrub.out::-webkit-slider-thumb { background: var(--p4-dim); box-shadow: none; }
+#scrub.out::-moz-range-thumb { background: var(--p4-dim); box-shadow: none; }
+#scrub:focus-visible { outline: 1px dashed var(--p4); outline-offset: 1px; }
+.scrub-marks { position: absolute; left: 4px; right: 4px; top: 0; height: 5px; pointer-events: none; }
+.scrub-marks i {
+  position: absolute;
+  left: calc(var(--at) * 100%);
+  width: 2px;
+  height: 5px;
+  background: var(--amber-mid);
+}
+.scrub-marks i.vis { background: #fff; box-shadow: 0 0 4px rgba(255, 255, 255, 0.7); }
+.scrub-scale { display: flex; justify-content: space-between; font-size: 10px; line-height: 1; color: var(--p4-dim); text-shadow: none; }
 /* Control buttons in warm P4 white: time controls, quick targets, observer station. */
 .speeds button, #quick button, .observer .btn-row button { color: var(--p4); border-color: var(--p4-dim); text-shadow: var(--p4-glow); }
 .speeds button:hover, .speeds button.active,

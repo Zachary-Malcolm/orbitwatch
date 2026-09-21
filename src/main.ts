@@ -22,6 +22,7 @@ import { enableSearch, initSearch } from './ui/search';
 import { buildLegend } from './ui/legend';
 import { buildCensus, recordFrame, updateFastReadouts, updateGauges } from './ui/gauges';
 import { initTour, offerTour } from './ui/tour';
+import { initTimeline, updateTimeline } from './ui/timeline';
 
 // Entry point: wires up the terminal's panels (src/ui/), runs the frame loop and loads the catalogue.
 
@@ -42,6 +43,7 @@ initDisplay();
 initPicking();
 initSearch();
 initTour();
+initTimeline();
 
 // ---- Main loop -------------------------------------------------------------
 const satPos = new THREE.Vector3();
@@ -78,6 +80,7 @@ function frame(now: number) {
     updateFastReadouts(sim);
     updateEncounterReadouts(sim);
     updateObserverReadouts(sim);
+    updateTimeline(sim);
     if (!$('standby').hidden) $('radar').textContent = radarFrame(now / 700);
   }
   updateGauges(now);

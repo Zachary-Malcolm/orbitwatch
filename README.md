@@ -56,6 +56,8 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
   (e.g. the Starlink programme), and says so when an object has no coverage rather than showing unrelated stories
 - **Shareable links**: `#norad=25544` opens a satellite; `#norad=A&with=B&t=<ISO time>` opens a specific close approach
 - Search by name or NORAD ID, filter by constellation, and fast-forward time up to 1000×
+- **Timeline**: drag through the next 24 hours and watch everything move; the locked target's passes over the
+  station are marked on it (brighter when visible to the naked eye), so you can drag straight to the next one
 - **Guided tour** for first-time visitors: a welcome card, then eight short steps that highlight each panel in turn
   and end by locking onto the ISS. It can be skipped or switched off, never appears for visitors arriving on a
   shared link, and can be replayed from the `[?]` button in the status bar
@@ -105,6 +107,7 @@ Chrome through Playwright (see `scripts/capture-readme.mjs`).
 | `src/ui/gauges.ts` | Measured gauges, readouts and the orbit-regime census |
 | `src/ui/picking.ts`, `search.ts`, `legend.ts`, `display.ts`, `tabs.ts` | Globe clicks and hover, search, layer filter, display switches, tabs |
 | `src/ui/tour.ts` | First-visit guide: welcome card and step-by-step tour of the panels |
+| `src/ui/timeline.ts` | The 24-hour timeline under the clock, with pass marks |
 | `src/terminal.ts` | Text-mode widgets: block bars, sparklines, event log, radar sweep |
 | `src/telemetry.ts` | Event log bus and timed fetches for link latency |
 | `test/` | Unit tests for the orbital maths (see Testing below) |
@@ -116,7 +119,9 @@ Orbits drawn this way are closed ellipses, as they are in reality.
 **Performance.** Running SGP4 for 16k satellites every frame is too slow for 60 fps. Each frame
 re-propagates a 4 ms time-boxed slice of satellites (round robin). Every other satellite moves with a
 second-order Taylor step from its last exact fix: position, velocity and two-body gravitational
-acceleration. The error stays below a kilometre at real-time speed, and frames take ~6 ms.
+acceleration. The error stays below a kilometre at real-time speed, and frames take ~6 ms. When the clock
+jumps by more than two minutes (dragging the timeline, or jumping to a pass or encounter) those fixes are too
+old to extrapolate from, so that frame re-propagates everything at once.
 
 **Tracking camera.** While tracking, the orbit controls pivot around the satellite, and the camera's
 offset is stored in the satellite's own frame (along-track, radial, cross-track). The view of the
