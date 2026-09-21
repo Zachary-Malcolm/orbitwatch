@@ -447,13 +447,16 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 }
 @media (max-width: 900px) {
   html, body { overflow: auto; }
-  #app {
-    height: auto;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 60vh auto auto auto;
-    grid-template-areas: 'top' 'view' 'right' 'bottom' 'left';
-  }
-  .col { overflow: visible; }
+  /* One column where panels flow individually (the side columns dissolve with display: contents),
+     ordered by what matters on a phone: globe, target, layer filter, log and clock, then the rest. */
+  #app { height: auto; display: flex; flex-direction: column; }
+  .col { display: contents; }
+  .statusbar { order: 0; flex: none; height: 30px; }
+  .viewport { order: 1; flex: none; height: 60vh; }
+  .right > * { order: 2; }
+  .left > .layers { order: 3; }
+  .bottom { order: 4; }
+  .left > * { order: 5; }
   .bottom { grid-template-columns: minmax(0, 1fr); grid-template-rows: 200px auto; }
   .hide-sm { display: none; }
   .statusbar { justify-content: space-between; }
