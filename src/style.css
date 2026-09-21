@@ -385,8 +385,15 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 #log::after { content: '█'; animation: blink 1s steps(1) infinite; }
 
 .chrono .big { font: 400 46px/1 var(--pixel); letter-spacing: 0.04em; }
-.speeds button { padding: 3px 0; color: var(--p4); border-color: var(--p4-dim); text-shadow: var(--p4-glow); }
-.speeds button:hover, .speeds button.active { background: var(--p4); border-color: var(--p4); color: var(--bg); text-shadow: none; }
+.speeds button { padding: 3px 0; }
+/* Control buttons in warm P4 white: time controls, quick targets, observer station. */
+.speeds button, #quick button, .observer .btn-row button { color: var(--p4); border-color: var(--p4-dim); text-shadow: var(--p4-glow); }
+.speeds button:hover, .speeds button.active,
+#quick button:hover, #quick button:active,
+.observer .btn-row button:hover, .observer .btn-row button.active { background: var(--p4); border-color: var(--p4); color: var(--bg); text-shadow: none; }
+/* Actions on the locked target share its red (the TARGET LOCKED lamp, its orbit and drop line). */
+#copy-link, #release { color: var(--warn); border-color: rgba(255, 51, 51, 0.55); text-shadow: 0 0 3px rgba(255, 51, 51, 0.5); }
+#copy-link:hover, #release:hover { background: var(--warn); border-color: var(--warn); color: var(--bg); text-shadow: none; }
 
 /* ---------- Tooltip ---------- */
 #tooltip {
