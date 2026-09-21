@@ -1,0 +1,71 @@
+# OrbitWatch: handoff notes for Claude
+
+Live 3D tracker of every active satellite (~16,000) plus ~2,700 debris fragments, styled as a 1980s
+amber-phosphor surveillance terminal. Vite + TypeScript + Three.js + satellite.js, no framework, no backend.
+
+- Live: https://zachary-malcolm.github.io/orbitwatch/ · Repo: https://github.com/Zachary-Malcolm/orbitwatch
+- **README.md is the full reference**: features, file-by-file map, and how each algorithm works. Read it first.
+- Owner: Zach (GitHub `Zachary-Malcolm`). This is a **CV/portfolio project**, so code quality, honesty and
+  presentation matter as much as features.
+
+## Commands
+
+```bash
+npm run dev       # dev server (the app fetches CelesTrak directly in dev)
+npm run build     # tsc + vite build (production base path is /orbitwatch/)
+npm run capture   # regenerate README media in docs/media from the live site (drives local Chrome)
+```
+
+`npx tsc --noEmit` is the quick check. There are **no tests yet** (see next steps).
+
+## Deploy
+
+Pushing to `main` deploys to GitHub Pages (`.github/workflows/deploy.yml`). The workflow also runs every
+3 hours to refresh `public/data/` (git-ignored): a mirror of CelesTrak's active catalogue and debris
+groups. The production app reads that mirror, because CelesTrak returns 403 to any IP that re-downloads
+a group within 2 hours. **Don't fetch CelesTrak groups repeatedly while testing**; the dev app caches them
+in the browser's Cache API for 2 hours.
+
+## Rules the owner cares about
+
+- **Colour has meaning; keep it that way.** Amber `#ffb000` (P3 phosphor) = the terminal's own UI.
+  Green `--p1` = gauges/progress bars. Warm white `--p4` = control buttons (chrono, quick targets,
+  observer). Blue `--feed` = news from outside sources. Red `--warn` = warnings and the locked target
+  (Release target). Orange `#ff7a2e` = Copy link. Satellite categories have their own palette in
+  `CATEGORIES` (`src/satellites.ts`) with glyph shapes as a second cue. New colours must fit the
+  phosphor theme, never random.
+- **Phosphor mode** is a post-process in `src/scene.ts` that turns the frame amber. Anything that must keep
+  its own colour renders with alpha `PASSTHROUGH_ALPHA` and `NoBlending` (satellite glyphs, ground track,
+  observer marker); near-pure red also passes through.
+- **Gauges show real measured data only**, never randomised values.
+- **Privacy:** the observer location stays in localStorage only. Never send it anywhere or put it in URLs.
+- **Honesty in the UI:** representative images and models are labelled as such; miss distances are
+  flagged as indicative (TLE accuracy is ~1 km).
+- **Mobile (≤900px):** panels flow individually (`.col { display: contents }`) in order: globe,
+  dossier/radar, layer filter, target acquisition, log/chrono, then the rest (`order` rules in `style.css`).
+- Explain things in plain terms; Zach is learning. Confirm before anything public-facing (repo settings,
+  publishing). Commit and push completed work (the repo auto-deploys).
+
+## Code notes
+
+- `tsconfig` has `erasableSyntaxOnly`: **no constructor parameter properties** (declare fields and assign).
+- `src/main.ts` (~1,200 lines) holds UI wiring for everything and needs splitting.
+- Verify in the browser preview with **text/DOM checks first** and few screenshots (they are costly).
+  A dev-only `window.debug` exposes `globe`, `models`, `getLayer()` and `getConj()`.
+- Commit messages end with a `Co-Authored-By: Claude …` line (shows Claude as a GitHub contributor).
+  Zach may want this dropped; ask if unsure.
+
+## Next steps (agreed priority)
+
+1. **Tests + CI:** Vitest unit tests for the maths (SGP4 positions vs known ISS values, pass prediction,
+   footprint radius, screening on a tiny synthetic catalogue, tile quadtree), a GitHub Action running
+   `tsc` + tests on every push, and a README badge.
+2. **Split `main.ts`** into modules (camera, dossier, gauges, observer/passes, conjunction UI, news, links).
+3. **Lighter on phones:** run close-approach screening only when the APPROACHES tab is opened (or on idle),
+   use fewer workers on mobile, and consider fewer imagery tiles.
+4. **Onboarding:** a short "how to read this terminal" overlay or guided first click for new visitors.
+5. **Validate passes** against Heavens-Above or N2YO for the ISS; note it in the README.
+6. **Launch tracker** (next headline feature): Launch Library 2 (`ll.thespacedevs.com/2.3.0`, 15 req/hour
+   free, so mirror or cache it), countdown, launch-pad markers, launch alert pop-up with the YouTube stream
+   in a CRT window, then highlight new objects from CelesTrak's `last-30-days` group.
+7. Later: spacewalk/docking events on the ISS dossier; NOAA space-weather (Kp) gauge.
