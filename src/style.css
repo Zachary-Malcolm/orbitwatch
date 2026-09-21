@@ -584,3 +584,36 @@ body.picking #globe canvas { cursor: crosshair !important; }
 @media (max-width: 900px) {
   .ticker { display: none; }
 }
+
+/* ---------- Guide: first-visit tour ----------
+   Amber throughout: it is the terminal's own voice. The highlighted panel is cut out of a dark
+   veil with a huge box-shadow; the card sits beside it (at the bottom of the screen on phones). */
+#guide-btn { flex: none; padding: 0 5px; line-height: 1.2; }
+.tour { position: fixed; inset: 0; z-index: 90; }
+.tour.welcome { background: rgba(8, 11, 12, 0.8); }
+.tour-spot {
+  position: fixed;
+  border: 2px solid var(--amber);
+  outline: 1px dashed var(--amber-dim);
+  outline-offset: 4px;
+  box-shadow: 0 0 8px rgba(255, 176, 0, 0.55), 0 0 0 200vmax rgba(8, 11, 12, 0.74);
+  pointer-events: none;
+  transition: left 0.3s, top 0.3s, width 0.3s, height 0.3s;
+}
+.tour-spot[hidden] { display: none; }
+.tour-card {
+  position: fixed;
+  width: min(360px, calc(100vw - 24px));
+  border-color: var(--amber);
+  box-shadow: 0 0 12px rgba(255, 176, 0, 0.25);
+}
+.tour-card p { margin: 0 0 8px; line-height: 1.45; text-transform: none; }
+.tour-card p.lead { font: 400 20px/1.1 var(--pixel); text-transform: uppercase; letter-spacing: 0.04em; }
+.tour-card p.hint { margin: 8px 0 0; font-size: 12px; color: var(--amber-mid); }
+.tour-card .btn-row { flex-wrap: wrap; }
+.tour-card .btn-row button { flex: 1 0 auto; }
+.tour-card button.primary { background: var(--amber); color: var(--bg); text-shadow: none; }
+.tour-card button.primary:hover { background: transparent; color: var(--amber); text-shadow: var(--glow); }
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot { transition: none; }
+}

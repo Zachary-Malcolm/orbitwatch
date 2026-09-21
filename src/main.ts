@@ -21,6 +21,7 @@ import { initPicking, updateHover } from './ui/picking';
 import { enableSearch, initSearch } from './ui/search';
 import { buildLegend } from './ui/legend';
 import { buildCensus, recordFrame, updateFastReadouts, updateGauges } from './ui/gauges';
+import { initTour, offerTour } from './ui/tour';
 
 // Entry point: wires up the terminal's panels (src/ui/), runs the frame loop and loads the catalogue.
 
@@ -40,6 +41,7 @@ initNews();
 initDisplay();
 initPicking();
 initSearch();
+initTour();
 
 // ---- Main loop -------------------------------------------------------------
 const satPos = new THREE.Vector3();
@@ -115,12 +117,14 @@ Promise.all([
     log('SGP4', 'PROPAGATOR ARMED · ROUND-ROBIN 4 MS SLICE');
     applyHash();
     runScreening();
+    offerTour();
   })
   .catch((err: unknown) => {
     console.error(err);
     $('sb-link').textContent = '■ LINK DOWN';
     $('sb-link').classList.add('warn');
     log('CELESTRAK', 'COULD NOT RETRIEVE ORBITAL ELEMENTS · RETRY IN A FEW MINUTES', 'warn');
+    offerTour();
   });
 
 if (import.meta.env.DEV) Object.assign(window, { debug: { globe, models, getLayer: () => app.layer, getConj } });

@@ -45,6 +45,7 @@ in the browser's Cache API for 2 hours.
   observer marker); near-pure red also passes through.
 - **Gauges show real measured data only**, never randomised values.
 - **Privacy:** the observer location stays in localStorage only. Never send it anywhere or put it in URLs.
+  (The only other thing stored is whether the guide has been seen.)
 - **Honesty in the UI:** representative images and models are labelled as such; miss distances are
   flagged as indicative (TLE accuracy is ~1 km).
 - **Mobile (≤900px):** panels flow individually (`.col { display: contents }`) in order: globe,
@@ -70,7 +71,9 @@ in the browser's Cache API for 2 hours.
 2. ~~Split `main.ts`~~ (done 2026-09-22: `src/ui/`, main.ts 1,236 → 126 lines).
 3. **Lighter on phones:** run close-approach screening only when the APPROACHES tab is opened (or on idle),
    use fewer workers on mobile, and consider fewer imagery tiles.
-4. **Onboarding:** a short "how to read this terminal" overlay or guided first click for new visitors.
+4. ~~Onboarding~~ (done 2026-09-22: `src/ui/tour.ts`; welcome card with START / NOT NOW / DON'T SHOW AGAIN,
+   8 steps, ends by offering to lock the ISS; skipped for `#norad=` links; `[?]` replays; remembered via
+   localStorage `orbitwatch.tour`). If panels are added or renamed, update the steps in `STEPS`.
 5. **Validate passes** against Heavens-Above or N2YO for the ISS; note it in the README.
 6. **Launch tracker** (next headline feature): Launch Library 2 (`ll.thespacedevs.com/2.3.0`, 15 req/hour
    free, so mirror or cache it), countdown, launch-pad markers, launch alert pop-up with the YouTube stream
