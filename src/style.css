@@ -391,9 +391,12 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 .speeds button:hover, .speeds button.active,
 #quick button:hover, #quick button:active,
 .observer .btn-row button:hover, .observer .btn-row button.active { background: var(--p4); border-color: var(--p4); color: var(--bg); text-shadow: none; }
-/* Actions on the locked target share its red (the TARGET LOCKED lamp, its orbit and drop line). */
-#copy-link, #release { color: var(--warn); border-color: rgba(255, 51, 51, 0.55); text-shadow: 0 0 3px rgba(255, 51, 51, 0.5); }
-#copy-link:hover, #release:hover { background: var(--warn); border-color: var(--warn); color: var(--bg); text-shadow: none; }
+/* Release shares the locked target's red (the TARGET LOCKED lamp, its orbit and drop line). */
+#release { color: var(--warn); border-color: rgba(255, 51, 51, 0.55); text-shadow: 0 0 3px rgba(255, 51, 51, 0.5); }
+#release:hover { background: var(--warn); border-color: var(--warn); color: var(--bg); text-shadow: none; }
+/* Copy link: a deeper orange, between the amber phosphor and the target red. */
+#copy-link { color: #ff7a2e; border-color: rgba(255, 122, 46, 0.55); text-shadow: 0 0 3px rgba(255, 122, 46, 0.5); }
+#copy-link:hover { background: #ff7a2e; border-color: #ff7a2e; color: var(--bg); text-shadow: none; }
 
 /* ---------- Tooltip ---------- */
 #tooltip {
