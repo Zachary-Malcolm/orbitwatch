@@ -541,7 +541,7 @@ function updateGauges(now: number) {
     $('m-heap').textContent = 'N/A IN THIS BROWSER';
   }
 
-  $('l-celestrak').textContent = linkText('CELESTRAK');
+  $('l-celestrak').textContent = linkText(latency.has('MIRROR') ? 'MIRROR' : 'CELESTRAK');
   $('l-satcat').textContent = linkText('SATCAT');
   $('l-wikidata').textContent = linkText('WIKIDATA');
   $('l-wikipedia').textContent = linkText('WIKIPEDIA');
@@ -622,7 +622,7 @@ requestAnimationFrame(frame);
 
 // ---- Boot --------------------------------------------------------------------
 loadSatellites()
-  .then(({ sats, fetchedAt, fromCache }) => {
+  .then(({ sats, fetchedAt, source }) => {
     layer = new SatelliteLayer(sats, globe.scene);
     layer.setVisualMode(globe.visualMode);
     models.setCatalog(sats);
@@ -630,9 +630,10 @@ loadSatellites()
     buildCensus(layer.regimeCounts());
     search.disabled = false;
     const age = Math.round((Date.now() - fetchedAt.getTime()) / 60000);
-    $('sb-link').textContent = `■ CELESTRAK ${fromCache ? 'CACHE' : 'LIVE'}`;
+    $('sb-link').textContent = `■ CELESTRAK ${source.toUpperCase()}`;
     $('sb-link').classList.remove('blink-slow');
-    log('CELESTRAK', `${sats.length.toLocaleString('en-GB')} ELEMENT SETS PARSED · ${fromCache ? `CACHE, ${age} MIN OLD` : 'LIVE DOWNLINK'}`, 'ok');
+    const via = { mirror: `SITE MIRROR, ${age} MIN OLD`, cache: `BROWSER CACHE, ${age} MIN OLD`, live: 'LIVE DOWNLINK' }[source];
+    log('CELESTRAK', `${sats.length.toLocaleString('en-GB')} ELEMENT SETS PARSED · ${via}`, 'ok');
     log('SGP4', 'PROPAGATOR ARMED · ROUND-ROBIN 4 MS SLICE');
   })
   .catch((err: unknown) => {

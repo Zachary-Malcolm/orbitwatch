@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Satellite catalogue mirrored by the deploy workflow
+public/data

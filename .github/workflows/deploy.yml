@@ -4,6 +4,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # Rebuild every 3 hours so the published satellite catalogue stays current.
+  schedule:
+    - cron: '17 */3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -26,6 +29,18 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Mirror CelesTrak's active catalogue into the site, so visitors never hit CelesTrak's
+      # per-IP download limit. If CelesTrak is unavailable the site falls back to fetching
+      # it directly in the browser.
+      - name: Fetch satellite catalogue
+        continue-on-error: true
+        run: |
+          mkdir -p public/data
+          curl -fsS --retry 3 -A "OrbitWatch (github.com/${{ github.repository }})" \
+            "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle" -o public/data/active.tle
+          grep -q '^1 ' public/data/active.tle
+          echo "{\"fetchedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/data/active.json
+          echo "Mirrored $(grep -c '^1 ' public/data/active.tle) element sets"
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
