@@ -45,7 +45,7 @@ const STEPS: Step[] = [
     target: q('.chrono'),
     title: 'TIME CONTROL',
     text: () =>
-      'The terminal runs in real time. Drag the timeline to move anywhere in the next 24 hours, speed it up to watch the orbits move, pause it, or press NOW to return to the present.',
+      `The terminal runs in real time. Drag the timeline${innerWidth <= 900 ? ' along the bottom of the globe' : ''} to move anywhere in the next 24 hours, speed it up to watch the orbits move, pause it, or press NOW to return to the present.`,
   },
   {
     target: q('.bottom > .log'),

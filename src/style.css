@@ -389,8 +389,10 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 
 /* Timeline: a range input in the time controls' P4 white, over hour ticks, with the locked target's
    passes marked above it (brighter when visible to the naked eye). */
-.timeline { position: relative; margin-top: 6px; }
-.timeline::before {
+.timeline { margin-top: 6px; }
+.scrub-track { position: relative; }
+.scrub-offset { display: none; }
+.scrub-track::before {
   content: '';
   position: absolute;
   left: 4px;
@@ -436,6 +438,31 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 }
 .scrub-marks i.vis { background: #fff; box-shadow: 0 0 4px rgba(255, 255, 255, 0.7); }
 .scrub-scale { display: flex; justify-content: space-between; font-size: 10px; line-height: 1; color: var(--p4-dim); text-shadow: none; }
+
+/* Phones: the timeline sits on the bottom of the globe so the globe stays in view while dragging,
+   with the offset readout beside it and a finger-sized thumb. */
+.viewport .timeline {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 3px 10px 4px;
+  background: rgba(8, 11, 12, 0.8);
+  border: 1px solid var(--p4-dim);
+}
+.viewport .scrub-offset { display: block; min-width: 6ch; font: 400 22px/1 var(--pixel); color: var(--p4); text-shadow: var(--p4-glow); }
+.viewport #scrub { height: 34px; touch-action: none; }
+.viewport .scrub-track::before { top: 19px; }
+.viewport .scrub-marks { top: 4px; height: 6px; }
+.viewport .scrub-marks i { height: 6px; }
+.viewport #scrub::-webkit-slider-thumb { width: 18px; height: 30px; margin-top: -15px; }
+.viewport #scrub::-moz-range-thumb { width: 18px; height: 30px; }
 /* Control buttons in warm P4 white: time controls, quick targets, observer station. */
 .speeds button, #quick button, .observer .btn-row button { color: var(--p4); border-color: var(--p4-dim); text-shadow: var(--p4-glow); }
 .speeds button:hover, .speeds button.active,
@@ -553,6 +580,9 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 .linkish:hover { background: none; color: var(--amber); text-decoration: none; }
 .hud.bc { bottom: 14px; left: 50%; transform: translateX(-50%); font: 400 20px/1.1 var(--pixel); border-color: var(--warn); }
 .hud.bc[hidden] { display: none; }
+@media (max-width: 900px) {
+  .hud.bc { bottom: 72px; } /* above the timeline strip */
+}
 #d-encounter[hidden] { display: none; }
 
 /* ---------- Observer station & passes ---------- */

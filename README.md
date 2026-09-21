@@ -57,7 +57,8 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
 - **Shareable links**: `#norad=25544` opens a satellite; `#norad=A&with=B&t=<ISO time>` opens a specific close approach
 - Search by name or NORAD ID, filter by constellation, and fast-forward time up to 1000×
 - **Timeline**: drag through the next 24 hours and watch everything move; the locked target's passes over the
-  station are marked on it (brighter when visible to the naked eye), so you can drag straight to the next one
+  station are marked on it (brighter when visible to the naked eye), so you can drag straight to the next one.
+  On phones it sits on the bottom of the globe, with a finger-sized handle, so the globe stays in view
 - **Guided tour** for first-time visitors: a welcome card, then eight short steps that highlight each panel in turn
   and end by locking onto the ISS. It can be skipped or switched off, never appears for visitors arriving on a
   shared link, and can be replayed from the `[?]` button in the status bar
