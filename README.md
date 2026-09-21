@@ -1,5 +1,7 @@
 # OrbitWatch — live satellite tracker
 
+**▶ Live: [zachary-malcolm.github.io/orbitwatch](https://zachary-malcolm.github.io/orbitwatch/)**
+
 A real-time 3D globe showing every active satellite in orbit (~16,000 objects), computed in the browser from live orbital data,
 presented as a 1980s amber-phosphor orbital surveillance terminal.
 
@@ -12,7 +14,7 @@ presented as a 1980s amber-phosphor orbital surveillance terminal.
   keeping the target's orbit in warning red. Satellites are drawn as category glyphs (□ · ◆ ✚ ▲ ○) so they stay distinguishable
   without colour. Switch to true colour for the full NASA imagery
 
-- **Live data** from [CelesTrak](https://celestrak.org) (two-line element sets), cached for 2 hours to respect their rate limits
+- **Live data** from [CelesTrak](https://celestrak.org) (two-line element sets). The deployed site serves a copy that the GitHub Pages workflow refreshes every 3 hours, so visitors never run into CelesTrak's per-IP download limit
 - **Real orbital mechanics**: positions from the SGP4 propagation model via [satellite.js](https://github.com/shashwatak/satellite-js)
 - **High-resolution Earth**: NASA Blue Marble imagery by day and VIIRS city lights by night, streamed as tiles from NASA GIBS down to ~600 m per pixel. It rotates with Greenwich sidereal time, has a day/night terminator from the real sun position, and shows sun glint on the oceans
 - **Target dossier**: click any satellite for an intel-style panel with owner country and flag, launch date and site, operational status, radar size, a photo and briefing from Wikipedia, and live telemetry (including whether it's in sunlight or Earth's shadow)
