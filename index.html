@@ -274,6 +274,24 @@
       </footer>
     </div>
 
+    <!-- Boot screen, shown while the terminal starts up (src/ui/boot.ts). -->
+    <div id="boot" class="boot" role="status" aria-label="OrbitWatch is starting up">
+      <div class="boot-inner">
+        <div class="boot-logo" id="boot-logo" aria-hidden="true"></div>
+        <p class="boot-sub">ORBITAL SURVEILLANCE TERMINAL // MK-II</p>
+        <div class="boot-main">
+          <pre class="boot-globe" id="boot-globe" aria-hidden="true"></pre>
+          <ol class="boot-log" id="boot-log"></ol>
+        </div>
+        <div class="boot-bar-row">
+          <div class="boot-bar" id="boot-bar" aria-hidden="true"></div>
+          <b class="boot-pct" id="boot-pct">000%</b>
+        </div>
+        <p class="boot-status" id="boot-status">INITIALISING</p>
+        <p class="boot-skip">PRESS ANY KEY TO SKIP</p>
+      </div>
+    </div>
+
     <div class="crt" aria-hidden="true"></div>
     <div id="tooltip" hidden></div>
     <script type="module" src="/src/main.ts"></script>

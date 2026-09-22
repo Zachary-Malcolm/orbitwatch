@@ -46,7 +46,9 @@ without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local 
 - **Phosphor mode** is a post-process in `src/scene.ts` that turns the frame amber. Anything that must keep
   its own colour renders with alpha `PASSTHROUGH_ALPHA` and `NoBlending` (satellite glyphs, ground track,
   observer marker); near-pure red also passes through.
-- **Gauges show real measured data only**, never randomised values.
+- **Gauges show real measured data only**, never randomised values. The boot screen (`src/ui/boot.ts`) follows
+  the same rule: its pacing is theatre, but each log line reports a real result (fed by `bootReport()`), and
+  the bar holds short of 100% until the catalogue has actually loaded.
 - **Sound** (`src/ui/sound.ts`) is synthesised, on by default at medium volume (silent until the first click; `[♪]` cycles low/med/high/off), and must stay retro: square/triangle waves and
   filtered noise through the warm low-pass. New interactive controls get a click automatically (document-level
   listener); add switches to the toggle selector there.

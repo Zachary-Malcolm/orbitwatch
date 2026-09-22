@@ -24,9 +24,11 @@ import { buildCensus, recordFrame, updateFastReadouts, updateGauges } from './ui
 import { initTour, offerTour } from './ui/tour';
 import { initTimeline, updateTimeline } from './ui/timeline';
 import { initSound, sfx } from './ui/sound';
+import { bootReport, startBoot, whenBooted } from './ui/boot';
 
 // Entry point: wires up the terminal's panels (src/ui/), runs the frame loop and loads the catalogue.
 
+startBoot();
 mountLog($('log'));
 log('SYSTEM', 'ORBITWATCH MK-II TERMINAL ONLINE', 'ok');
 log('RENDER', `WEBGL${globe.renderer.capabilities.isWebGL2 ? '2' : '1'} CONTEXT · MAX TEX ${globe.renderer.capabilities.maxTextureSize}`);
@@ -133,16 +135,20 @@ Promise.all([
     log('CELESTRAK', `${active.sats.length.toLocaleString('en-GB')} ELEMENT SETS PARSED · ${via}`, 'ok');
     if (debris) log('CELESTRAK', `${debris.sats.length.toLocaleString('en-GB')} DEBRIS FRAGMENTS · 4 BREAK-UP EVENTS`, 'ok');
     log('SGP4', 'PROPAGATOR ARMED · ROUND-ROBIN 4 MS SLICE');
+    bootReport('catalogue', `${active.sats.length.toLocaleString('en-GB')} ELEMENT SETS`);
+    bootReport('debris', debris ? `${debris.sats.length.toLocaleString('en-GB')} FRAGMENTS` : 'UNAVAILABLE', debris !== null);
     applyHash();
     runScreening();
-    offerTour();
+    whenBooted.then(offerTour);
   })
   .catch((err: unknown) => {
     console.error(err);
     $('sb-link').textContent = '■ LINK DOWN';
     $('sb-link').classList.add('warn');
     log('CELESTRAK', 'COULD NOT RETRIEVE ORBITAL ELEMENTS · RETRY IN A FEW MINUTES', 'warn');
-    offerTour();
+    bootReport('catalogue', 'LINK DOWN', false);
+    bootReport('debris', 'LINK DOWN', false);
+    whenBooted.then(offerTour);
   });
 
 if (import.meta.env.DEV) Object.assign(window, { debug: { globe, models, getLayer: () => app.layer, getConj } });

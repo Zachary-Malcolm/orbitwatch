@@ -706,3 +706,81 @@ body.picking #globe canvas { cursor: crosshair !important; }
 @media (prefers-reduced-motion: reduce) {
   .tour-spot { transition: none; }
 }
+
+/* ---------- Boot screen ----------
+   Under the CRT scanlines (z-index 95 < 100). Amber throughout, except the loading bar and the
+   [ OK ] tags, which use the gauges' P1 green, and failures, in warning red. */
+body.booting { overflow: hidden; }
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: safe center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  background: var(--bg);
+  cursor: pointer;
+}
+.boot-inner { width: min(780px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.boot-logo { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 2px; width: 100%; }
+.boot-logo i { aspect-ratio: 1; }
+.boot-logo i.on {
+  background: var(--amber);
+  box-shadow: 0 0 6px rgba(255, 176, 0, 0.6);
+  opacity: 0;
+  animation: px-on 0.3s steps(3) forwards;
+}
+@keyframes px-on { 0% { opacity: 0; } 33% { opacity: 1; } 66% { opacity: 0.3; } 100% { opacity: 1; } }
+.boot-sub { margin: 0; text-align: center; letter-spacing: 0.3em; color: var(--amber-mid); }
+.boot-main { display: flex; gap: 20px; align-items: center; justify-content: center; }
+.boot-globe { flex: none; font: 13px/1 var(--term); white-space: pre; }
+.boot-globe .n, .boot-globe .o { color: var(--amber-dim); text-shadow: none; }
+.boot-globe .g { color: #ffe2a0; }
+.boot-globe .s { color: #ffe2a0; text-shadow: 0 0 6px rgba(255, 226, 160, 0.9); }
+.boot-log { flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.boot-log li { line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.boot-log .lbl { color: var(--amber-mid); }
+.boot-log .tag { color: var(--p1); text-shadow: var(--p1-glow); }
+.boot-log .tag.fail, .boot-log .final.fail { color: var(--warn); text-shadow: 0 0 3px rgba(255, 51, 51, 0.6); }
+.boot-log .final { margin-top: 6px; font: 400 21px/1.2 var(--pixel); letter-spacing: 0.06em; }
+.boot-bar-row { display: flex; align-items: center; gap: 12px; }
+.boot-bar { flex: 1; display: flex; gap: 3px; height: 32px; padding: 4px; border: 2px solid var(--p1-dim); }
+.boot-bar i { flex: 1; background: rgba(86, 255, 138, 0.07); }
+.boot-bar i.on { background: var(--p1); box-shadow: var(--p1-glow); }
+.boot-bar i.hot { animation: seg-hot 0.12s steps(2) infinite; }
+@keyframes seg-hot { 50% { opacity: 0.4; } }
+.boot-pct { min-width: 4ch; font: 400 38px/1 var(--pixel); text-align: right; color: var(--p1); text-shadow: var(--p1-glow); }
+.boot-status { margin: 0; text-align: center; letter-spacing: 0.18em; }
+.boot.ready .boot-status { animation: blink 0.3s steps(1) 2; }
+.boot-skip { margin: 0; text-align: center; font-size: 11px; color: var(--amber-dim); text-shadow: none; opacity: 0; animation: boot-fade 0.6s 1.5s forwards; }
+@keyframes boot-fade { to { opacity: 1; } }
+/* CRT switch-on: the boot screen collapses to a bright line and the dashboard opens out of it. */
+.boot.off { animation: crt-off 0.42s ease-in forwards; }
+@keyframes crt-off {
+  0% { transform: none; filter: none; }
+  55% { transform: scale(1, 0.006); filter: brightness(3); }
+  100% { transform: scale(0, 0.006); filter: brightness(4); opacity: 0; }
+}
+/* Open from the middle of the screen (on phones #app is the whole, much taller, scrolling page). */
+body.powering #app { transform-origin: 50% 50vh; animation: crt-on 0.55s ease-out; }
+@keyframes crt-on {
+  0% { transform: scale(1, 0.006); filter: brightness(4); }
+  55% { transform: scale(1, 1.02); filter: brightness(1.4); }
+  100% { transform: none; filter: none; }
+}
+@media (max-width: 700px) {
+  .boot-main { flex-direction: column; gap: 10px; }
+  .boot-globe { font-size: 10px; }
+  .boot-log { width: 100%; font-size: 12px; }
+  .boot-bar { height: 26px; }
+  .boot-pct { font-size: 30px; }
+  .boot-sub { letter-spacing: 0.15em; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-logo i.on { animation: none; opacity: 1; }
+  .boot-bar i.hot, .boot.ready .boot-status { animation: none; }
+  .boot.off { animation: none; opacity: 0; }
+  body.powering #app { animation: none; }
+}
