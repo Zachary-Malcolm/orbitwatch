@@ -4,6 +4,7 @@ import { $ } from './dom';
 import { hms } from './format';
 import { updateFastReadouts } from './gauges';
 import { currentPasses } from './passesPanel';
+import { sfx } from './sound';
 
 // The timeline: drag to move the simulated time anywhere in the next 24 hours. The clock holds while
 // dragging and carries on at its previous speed from wherever it is let go. Passes of the locked target
@@ -76,6 +77,7 @@ export function initTimeline() {
       resumeSpeed = clockSpeed();
     }
     scrubTo(Number(slider.value), 0);
+    sfx.scrub();
   });
   slider.addEventListener('change', () => {
     if (!dragging) return;

@@ -23,6 +23,7 @@ import { buildLegend } from './ui/legend';
 import { buildCensus, recordFrame, updateFastReadouts, updateGauges } from './ui/gauges';
 import { initTour, offerTour } from './ui/tour';
 import { initTimeline, updateTimeline } from './ui/timeline';
+import { initSound } from './ui/sound';
 
 // Entry point: wires up the terminal's panels (src/ui/), runs the frame loop and loads the catalogue.
 
@@ -44,6 +45,7 @@ initPicking();
 initSearch();
 initTour();
 initTimeline();
+initSound();
 
 // ---- Main loop -------------------------------------------------------------
 const satPos = new THREE.Vector3();

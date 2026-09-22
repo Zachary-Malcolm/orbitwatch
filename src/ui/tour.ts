@@ -2,6 +2,7 @@ import { log } from '../telemetry';
 import { app } from './context';
 import { $ } from './dom';
 import { select } from './selection';
+import { soundOn } from './sound';
 
 // The guide for first-time visitors: a welcome card, then a short tour that highlights one panel at a
 // time and ends by offering to lock onto the ISS. It opens by itself only on a first visit, and not
@@ -126,7 +127,7 @@ function render() {
       button('NOT NOW', () => close('later')),
       button("DON'T SHOW AGAIN", () => close('optout')),
     );
-    body.push(buttons, make('p', 'hint', 'Reopen this guide any time with [?] at the top of the screen.'));
+    body.push(buttons, make('p', 'hint', `Reopen this guide any time with [?] at the top of the screen. Terminal sounds are ${soundOn() ? 'on; mute them' : 'off; switch them on'} with [♪].`));
   } else {
     body.push(make('p', '', STEPS[step].text()));
     const last = step === STEPS.length - 1;

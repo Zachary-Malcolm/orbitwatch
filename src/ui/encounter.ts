@@ -9,6 +9,7 @@ import { fmt, fmtKm, hms } from './format';
 import { toggleCategory } from './legend';
 import { updateHash } from './links';
 import { select } from './selection';
+import { sfx } from './sound';
 
 // Encounter view. Opening a close approach locks onto the first object, shows the second alongside
 // it with a red line joining them, rewinds the clock to shortly before closest approach and holds
@@ -59,6 +60,7 @@ export function holdAtClosestApproach(sim: number): number {
   jumpTo(encounter.tcaMs, 0);
   const sep = app.layer?.separation(encounter.a, encounter.b, encounter.tcaMs);
   log('CONJ', `CLOSEST APPROACH · ${sep ? fmtKm(sep.km) : '--'} · HELD AT TCA`, 'warn');
+  sfx.alarm();
   return encounter.tcaMs;
 }
 

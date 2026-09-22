@@ -5,6 +5,7 @@ import { app } from './context';
 import { $ } from './dom';
 import { openEncounter } from './encounter';
 import { fmt, fmtKm, untilText } from './format';
+import { sfx } from './sound';
 
 // The APPROACHES tab and the dossier's close-approach list: runs screening and lists the results.
 
@@ -95,6 +96,7 @@ export async function runScreening() {
     const events = visibleEvents();
     $('cj-status').textContent = `${events.length} FOUND · ${fmt(conj.ms / 1000, 1)} S`;
     blocks($('b-cj'), 1);
+    sfx.done();
     log(
       'CONJ',
       `${events.length} CLOSE APPROACHES · ${fmt(conj.pairsChecked / 1e6, 1)}M PAIR CHECKS · ${conj.workers} WORKERS · ${fmt(conj.ms / 1000, 1)} S`,

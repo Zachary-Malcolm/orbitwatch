@@ -674,7 +674,7 @@ body.picking #globe canvas { cursor: crosshair !important; }
 /* ---------- Guide: first-visit tour ----------
    Amber throughout: it is the terminal's own voice. The highlighted panel is cut out of a dark
    veil with a huge box-shadow; the card sits beside it (at the bottom of the screen on phones). */
-#guide-btn { flex: none; padding: 0 5px; line-height: 1.2; }
+#guide-btn, #sound-btn { flex: none; padding: 0 5px; line-height: 1.2; }
 .tour { position: fixed; inset: 0; z-index: 90; }
 .tour.welcome { background: rgba(8, 11, 12, 0.8); }
 .tour-spot {

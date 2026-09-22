@@ -47,8 +47,11 @@ without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local 
   its own colour renders with alpha `PASSTHROUGH_ALPHA` and `NoBlending` (satellite glyphs, ground track,
   observer marker); near-pure red also passes through.
 - **Gauges show real measured data only**, never randomised values.
+- **Sound** (`src/ui/sound.ts`) is synthesised, off by default, and must stay retro: square/triangle waves and
+  filtered noise through the warm low-pass. New interactive controls get a click automatically (document-level
+  listener); add switches to the toggle selector there.
 - **Privacy:** the observer location stays in localStorage only. Never send it anywhere or put it in URLs.
-  (The only other thing stored is whether the guide has been seen.)
+  (The only other things stored are whether the guide has been seen and the sound on/off setting.)
 - **Honesty in the UI:** representative images and models are labelled as such; miss distances are
   flagged as indicative (TLE accuracy is ~1 km).
 - **Mobile (≤900px):** panels flow individually (`.col { display: contents }`) in order: globe,

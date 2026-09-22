@@ -1,6 +1,7 @@
 import { latestNews, timeAgo, type Article, type ObjectNews } from '../news';
 import { log } from '../telemetry';
 import { $ } from './dom';
+import { sfx } from './sound';
 
 // News uplink. The ticker types out the latest headlines one at a time; the NEWS tab lists them; the
 // dossier shows news about the selected object. New stories are polled every 5 minutes.
@@ -44,6 +45,7 @@ async function refreshNews() {
         log('NEWS', `${a.site} · ${a.title}`, 'ok');
       }
     }
+    if (!firstSync && incoming.length) sfx.bell();
     if (firstSync) log('NEWS', `UPLINK ESTABLISHED · ${latest.length} STORIES · LATEST ${timeAgo(latest[0].publishedMs)}`);
     feed = latest;
     $('news-sync').textContent = new Date().toISOString().slice(11, 19) + ' UTC';
@@ -75,6 +77,8 @@ function tickTicker() {
   if (tickerChars < current.title.length) {
     tickerChars = Math.min(current.title.length, tickerChars + 2);
     $('ticker-text').textContent = current.title.slice(0, tickerChars);
+    // Chatter only while the ticker is on screen (phones hide it).
+    if ($('ticker').offsetParent) sfx.type();
     if (tickerChars === current.title.length) tickerHoldUntil = now + 7000;
   }
 }

@@ -19,6 +19,7 @@ import { jumpTo, simNow } from './clock';
 import { app, observerMarker } from './context';
 import { $ } from './dom';
 import { fmt, hms, localTime } from './format';
+import { sfx } from './sound';
 
 // The observer station (kept only in this browser) and the locked target's passes over it.
 
@@ -124,6 +125,8 @@ export function updateObserverReadouts(sim: number) {
   if (lastAbove !== null && above !== lastAbove) {
     const name = layer.sats[sel].name;
     log('STATION', `${above ? 'AOS' : 'LOS'} · ${name} ${above ? 'RISES' : 'SETS'} · AZ ${fmt(look.azDeg, 0)}° ${compass(look.azDeg)}`, above ? 'ok' : 'info');
+    if (above) sfx.aos();
+    else sfx.los();
   }
   lastAbove = above;
 
