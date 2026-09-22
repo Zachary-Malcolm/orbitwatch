@@ -31,6 +31,9 @@ Pushing to `main` deploys to GitHub Pages (`.github/workflows/deploy.yml`). The 
 groups. The production app reads that mirror, because CelesTrak returns 403 to any IP that re-downloads
 a group within 2 hours. **Don't fetch CelesTrak groups repeatedly while testing**; the dev app caches them
 in the browser's Cache API for 2 hours.
+`scripts/mirror-celestrak.sh` does the mirroring: it reuses the site's published copy if it is under 2 hours
+old (so several pushes in a row don't re-download) and every request has a time limit. It can be tested
+without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local server.
 
 ## Rules the owner cares about
 

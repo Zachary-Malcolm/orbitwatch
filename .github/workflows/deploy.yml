@@ -22,6 +22,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PAGES_URL: https://zachary-malcolm.github.io/orbitwatch
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,30 +34,17 @@ jobs:
       - run: npm ci
       # Never publish a build whose maths tests fail.
       - run: npm test
-      # Mirror CelesTrak's active catalogue into the site, so visitors never hit CelesTrak's
-      # per-IP download limit. If CelesTrak is unavailable the site falls back to fetching
-      # it directly in the browser.
+      # Mirror CelesTrak's catalogues into the site, so visitors never hit CelesTrak's per-IP download
+      # limit. The script reuses the published copy when it is under 2 hours old (so pushes in a row
+      # don't re-download) and times out rather than hang. If it fails, the site falls back to
+      # fetching CelesTrak directly in the browser.
       - name: Fetch satellite catalogue
         continue-on-error: true
-        run: |
-          mkdir -p public/data
-          curl -fsS --retry 3 -A "OrbitWatch (github.com/${{ github.repository }})" \
-            "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle" -o public/data/active.tle
-          grep -q '^1 ' public/data/active.tle
-          echo "{\"fetchedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/data/active.json
-          echo "Mirrored $(grep -c '^1 ' public/data/active.tle) element sets"
+        run: bash scripts/mirror-celestrak.sh active active
       # Debris clouds from the four largest break-ups (keep in sync with DEBRIS_GROUPS in src/tle.ts).
       - name: Fetch debris catalogue
         continue-on-error: true
-        run: |
-          : > public/data/debris.tle
-          for g in fengyun-1c-debris cosmos-2251-debris iridium-33-debris cosmos-1408-debris; do
-            curl -fsS --retry 3 -A "OrbitWatch (github.com/${{ github.repository }})" \
-              "https://celestrak.org/NORAD/elements/gp.php?GROUP=$g&FORMAT=tle" >> public/data/debris.tle
-          done
-          grep -q '^1 ' public/data/debris.tle
-          echo "{\"fetchedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/data/debris.json
-          echo "Mirrored $(grep -c '^1 ' public/data/debris.tle) debris objects"
+        run: bash scripts/mirror-celestrak.sh debris fengyun-1c-debris cosmos-2251-debris iridium-33-debris cosmos-1408-debris
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
