@@ -26,7 +26,7 @@
 
       <!-- ============ LEFT: SYSTEMS ============ -->
       <aside class="col left">
-        <section class="mod">
+        <section class="mod" id="sys-perf">
           <h2><span>SYS.PERF</span><i>01</i></h2>
           <div class="row"><label>FRAME RATE</label><b id="m-fps">--</b></div>
           <div class="bar" id="b-fps"></div>
@@ -38,7 +38,7 @@
           <div class="bar" id="b-heap"></div>
         </section>
 
-        <section class="mod">
+        <section class="mod" id="sys-census">
           <h2><span>ORBITAL CENSUS</span><i>02</i></h2>
           <div id="census"></div>
           <div class="row"><label>SUNLIT</label><b id="m-sunlit">--</b></div>
@@ -76,7 +76,7 @@
           <p class="dim note">KEPT IN THIS BROWSER ONLY. NEVER SENT OR SHARED IN LINKS.</p>
         </section>
 
-        <section class="mod">
+        <section class="mod" id="sys-links">
           <h2><span>DATA LINKS</span><i>05</i></h2>
           <div class="row"><label>CELESTRAK</label><b id="l-celestrak">--</b></div>
           <div class="row"><label>SATCAT</label><b id="l-satcat">--</b></div>
@@ -112,6 +112,13 @@
         </div>
         <div class="hud bl">CURSOR <b id="h-cursor">--</b></div>
         <div class="hud br">GRID 15° · <b id="h-tiles">--</b></div>
+        <!-- Phones only: the locked target, with release, on the globe itself (src/ui/mobile.ts). -->
+        <div class="target-chip" id="target-chip" hidden>
+          <button class="chip-open" id="chip-open" title="Open the target dossier">
+            <span class="glyph" id="chip-glyph"></span><b id="chip-name"></b><span class="chip-alt" id="chip-alt"></span><span class="chip-more">DOSSIER ▸</span>
+          </button>
+          <button class="chip-release" id="chip-release" aria-label="Release target">[X]</button>
+        </div>
         <div class="hud bc" id="h-encounter" hidden>RANGE <b id="h-range">--</b> · TCA <b id="h-tca">--</b></div>
       </main>
 
@@ -273,6 +280,26 @@
         </section>
       </footer>
     </div>
+
+    <!-- Phones only: the panels live in a bottom sheet opened from a tab bar, so the globe stays in
+         view while they're used (src/ui/mobile.ts). Hidden on wider screens. -->
+    <div class="sheet" id="sheet">
+      <div class="sheet-grip" id="sheet-grip" aria-hidden="true"><i></i></div>
+      <div class="sheet-body" id="sheet-body">
+        <div class="sheet-page" data-page="target"></div>
+        <div class="sheet-page" data-page="layers" hidden></div>
+        <div class="sheet-page" data-page="find" hidden></div>
+        <div class="sheet-page" data-page="time" hidden></div>
+        <div class="sheet-page" data-page="more" hidden></div>
+      </div>
+    </div>
+    <nav class="tabbar" id="tabbar" aria-label="Panels">
+      <button data-page="target">TARGET</button>
+      <button data-page="layers">LAYERS</button>
+      <button data-page="find">FIND</button>
+      <button data-page="time">TIME</button>
+      <button data-page="more">MORE</button>
+    </nav>
 
     <!-- Boot screen, shown while the terminal starts up (src/ui/boot.ts). -->
     <div id="boot" class="boot" role="status" aria-label="OrbitWatch is starting up">

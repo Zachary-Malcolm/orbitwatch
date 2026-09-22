@@ -58,8 +58,12 @@ without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local 
   (The only other things stored are whether the guide has been seen and the sound on/off setting.)
 - **Honesty in the UI:** representative images and models are labelled as such; miss distances are
   flagged as indicative (TLE accuracy is ~1 km).
-- **Mobile (≤900px):** panels flow individually (`.col { display: contents }`) in order: globe,
-  dossier/radar, layer filter, target acquisition, log/chrono, then the rest (`order` rules in `style.css`).
+- **Desktop layout is final: don't change it.** Phone work goes inside the `max-width: 900px` rules only.
+- **Phones (≤900px, `src/ui/mobile.ts`):** the globe fills the screen above a tab bar (TARGET · LAYERS · FIND ·
+  TIME · MORE); panels are moved into a bottom sheet (half / nearly full, drag the grip) and back to their
+  columns on wider screens, so find panels by class (`.mod.layers`), not by column. A chip on the globe shows
+  the locked target with release; locking closes the sheet; dossier sections fold (Briefing/News/Approaches
+  start folded). The timeline sits on the globe.
 - Explain things in plain terms; Zach is learning. Confirm before anything public-facing (repo settings,
   publishing). Commit and push completed work (the repo auto-deploys).
 

@@ -61,6 +61,9 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
 - **Timeline**: drag through the next 24 hours and watch everything move; the locked target's passes over the
   station are marked on it (brighter when visible to the naked eye), so you can drag straight to the next one.
   On phones it sits on the bottom of the globe, with a finger-sized handle, so the globe stays in view
+- **Phone layout**: the globe fills the screen above a tab bar, and panels open in a bottom sheet (drag to
+  resize) with the globe shrinking to stay whole above it, so every change is seen as it's made. A chip on the
+  globe shows the locked target with a release button, and the dossier's long sections fold away
 - **Terminal sounds** (on at medium volume after the first click; `[♪]` steps through low, medium, high and off): a CRT power-on thunk, key
   clicks on every control, rising and falling blips for switches, a "target acquired" tone, a modem chirp as
   dossier data arrives, eclipse tones as the target enters and leaves Earth's shadow, AOS/LOS chimes as it rises
@@ -128,6 +131,7 @@ Chrome through Playwright (see `scripts/capture-readme.mjs`).
 | `src/ui/sound.ts` | Synthesised terminal sounds (Web Audio) and the sound switch |
 | `src/ui/boot.ts` | The boot screen: pixel logo, ASCII globe, start-up log and loading bar |
 | `src/ui/tv.ts` | The television-style switch-on from the boot screen to the dashboard |
+| `src/ui/mobile.ts` | Phone layout: bottom sheet and tab bar, target chip, folding dossier sections |
 | `src/terminal.ts` | Text-mode widgets: block bars, sparklines, event log, radar sweep |
 | `src/telemetry.ts` | Event log bus and timed fetches for link latency |
 | `test/` | Unit tests for the orbital maths (see Testing below) |

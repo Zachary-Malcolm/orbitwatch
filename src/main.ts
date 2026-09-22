@@ -25,6 +25,7 @@ import { initTour, offerTour } from './ui/tour';
 import { initTimeline, updateTimeline } from './ui/timeline';
 import { initSound, sfx } from './ui/sound';
 import { bootReport, startBoot, whenBooted } from './ui/boot';
+import { initMobile, updateTargetChip } from './ui/mobile';
 
 // Entry point: wires up the terminal's panels (src/ui/), runs the frame loop and loads the catalogue.
 
@@ -48,6 +49,7 @@ initSearch();
 initTour();
 initTimeline();
 initSound();
+initMobile();
 
 // ---- Main loop -------------------------------------------------------------
 const satPos = new THREE.Vector3();
@@ -98,6 +100,7 @@ function frame(now: number) {
     updateEncounterReadouts(sim);
     updateObserverReadouts(sim);
     updateTimeline(sim);
+    updateTargetChip();
     if (!$('standby').hidden) drawRadar(now);
   }
   updateGauges(now);

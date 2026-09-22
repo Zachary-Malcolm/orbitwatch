@@ -19,6 +19,7 @@ import { clockJumps, jumpTo, simNow } from './clock';
 import { app, observerMarker } from './context';
 import { $ } from './dom';
 import { fmt, hms, localTime } from './format';
+import { closeSheet } from './mobile';
 import { sfx } from './sound';
 
 // The observer station (kept only in this browser) and the locked target's passes over it.
@@ -50,6 +51,7 @@ export function setObserver(o: Observer | null, announce = true) {
 
 export function setPicking(on: boolean) {
   picking = on;
+  if (on) closeSheet(); // on phones, uncover the globe to be clicked
   document.body.classList.toggle('picking', on);
   $('o-pick').classList.toggle('active', on);
 }

@@ -2,6 +2,7 @@ import { log } from '../telemetry';
 import { app } from './context';
 import { $ } from './dom';
 import { select } from './selection';
+import { revealOnPhone } from './mobile';
 import { soundLevel } from './sound';
 
 // The guide for first-time visitors: a welcome card, then a short tour that highlights one panel at a
@@ -32,13 +33,13 @@ const STEPS: Step[] = [
     },
   },
   {
-    target: q('.left > .layers'),
+    target: q('.mod.layers'),
     title: 'WHAT THE SHAPES MEAN',
     text: () =>
       'Each kind of object has its own colour and shape, so you can tell them apart even in the all-amber display. To keep things clear you start with space stations, navigation and Earth observation; click a row to switch on Starlink, OneWeb, other satellites or debris, which together add about 18,000 more.',
   },
   {
-    target: q('.left > .search'),
+    target: q('.mod.search'),
     title: 'FIND A SATELLITE',
     text: () => "Type a name or catalogue number, or use the quick buttons for the ISS, Hubble and China's Tiangong station.",
   },
@@ -49,7 +50,7 @@ const STEPS: Step[] = [
       `The terminal runs in real time. Drag the timeline${innerWidth <= 900 ? ' along the bottom of the globe' : ''} to move anywhere in the next 24 hours, speed it up to watch the orbits move, pause it, or press NOW to return to the present.`,
   },
   {
-    target: q('.bottom > .log'),
+    target: q('.mod.log'),
     title: 'EVENT LOG',
     text: () =>
       "Everything the terminal does is logged here as it happens: data arriving, targets locked, satellites passing into Earth's shadow. The gauges around the screen are measured live too. Nothing is simulated.",
@@ -61,7 +62,7 @@ const STEPS: Step[] = [
       'APPROACHES lists close passes between objects over the next 24 hours, found by checking every object against every other, right here in your browser. NEWS carries the latest spaceflight headlines: anything in blue comes from outside news sources.',
   },
   {
-    target: q('.left > .observer'),
+    target: q('.mod.observer'),
     title: 'WHEN CAN I SEE IT?',
     text: () =>
       'Set your location to see when the locked satellite passes over you, and whether it will be visible to the naked eye. Your location stays in this browser. It is never sent anywhere or put in links.',
@@ -162,8 +163,9 @@ function go(next: number) {
   step = next;
   render();
   const target = STEPS[step].target();
-  // On a phone the panels are stacked, so bring the next one up to the top of the screen.
-  target?.scrollIntoView({ block: innerWidth <= 900 ? 'start' : 'nearest', behavior: 'smooth' });
+  // On a phone, open the sheet on the panel's tab (or close it for the globe), then scroll to it.
+  revealOnPhone(target);
+  target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 /** Highlight the current panel and put the card beside it (each frame, so it follows scrolling). */

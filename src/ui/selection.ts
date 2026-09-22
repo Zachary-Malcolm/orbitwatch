@@ -10,6 +10,7 @@ import { clearEncounter } from './encounter';
 import { toggleCategory } from './legend';
 import { updateHash } from './links';
 import { refreshPasses } from './passesPanel';
+import { closeSheet, updateTargetChip } from './mobile';
 import { sfx } from './sound';
 import { showTab } from './tabs';
 
@@ -29,6 +30,7 @@ export function select(index: number, keepEncounter = false) {
       sfx.release();
     }
     if (!isGlobalView()) beginFlight('to-earth');
+    updateTargetChip();
     updateHash();
     return;
   }
@@ -42,6 +44,9 @@ export function select(index: number, keepEncounter = false) {
   renderTargetConjunctions(index);
   refreshPasses();
   updateHash();
+  // On phones, get the sheet out of the way so the camera's flight to the target is seen.
+  closeSheet();
+  updateTargetChip();
 }
 
 export function initSelection() {

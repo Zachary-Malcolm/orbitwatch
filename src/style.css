@@ -522,24 +522,97 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
   .bottom { grid-template-columns: minmax(0, 1fr) 220px; }
   .graphs { display: none !important; }
 }
+/* The phone layout's sheet, tab bar and target chip (src/ui/mobile.ts) don't exist on wider screens. */
+.sheet, .tabbar, .target-chip { display: none; }
+
 @media (max-width: 900px) {
-  html, body { overflow: auto; }
-  /* One column where panels flow individually (the side columns dissolve with display: contents),
-     ordered by what matters on a phone: globe, target, layer filter and search, log and clock, then the rest. */
-  #app { height: auto; display: flex; flex-direction: column; }
-  .col { display: contents; }
-  .statusbar { order: 0; flex: none; height: 30px; }
-  .viewport { order: 1; flex: none; height: 60vh; }
-  .right > * { order: 2; }
-  .left > .layers,
-  .left > .search { order: 3; }
-  .bottom { order: 4; }
-  .left > * { order: 5; }
-  .bottom { grid-template-columns: minmax(0, 1fr); grid-template-rows: 200px auto; }
+  /* Phones: the globe fills the screen above a tab bar, and the panels (moved here from the columns)
+     open in a bottom sheet; the globe shrinks to stay whole above it. */
+  :root { --tabbar-h: calc(48px + env(safe-area-inset-bottom)); }
+  html, body { overflow: hidden; }
+  #app {
+    position: fixed;
+    inset: 0 0 calc(var(--tabbar-h) + var(--sheet-h, 0px)) 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    transition: bottom 0.22s ease;
+  }
+  .col, .bottom { display: none; }
+  .statusbar { flex: none; height: 30px; justify-content: space-between; }
+  .viewport { flex: 1; min-height: 0; }
   .hide-sm { display: none; }
-  .statusbar { justify-content: space-between; }
   .hud.tl, .hud.bl, .hud.br { display: none; }
   .hud.tr { right: 12px; }
+
+  .sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--tabbar-h);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    height: var(--sheet-h, 0px);
+    overflow: hidden;
+    background: var(--bg);
+    border-top: 1px solid var(--amber);
+    box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.6);
+    transition: height 0.22s ease;
+  }
+  body.sheet-dragging .sheet, body.sheet-dragging #app { transition: none; }
+  .sheet-grip { flex: none; display: flex; align-items: center; justify-content: center; height: 22px; cursor: grab; touch-action: none; }
+  .sheet-grip i { width: 46px; height: 4px; background: var(--amber-dim); }
+  .sheet-body { flex: 1; min-height: 0; padding: 0 6px 10px; overflow-y: auto; overscroll-behavior: contain; }
+  .sheet-page { display: flex; flex-direction: column; gap: 6px; }
+  .sheet-page[hidden] { display: none; }
+  .sheet-page .log { display: flex; flex-direction: column; height: 220px; overflow: hidden; }
+
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 21;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    height: var(--tabbar-h);
+    padding: 0 6px env(safe-area-inset-bottom);
+    background: var(--bg);
+    border-top: 1px solid var(--amber-dim);
+  }
+  .tabbar button { flex: 1; min-width: 0; padding: 8px 0; font: 400 17px/1 var(--pixel); letter-spacing: 0.04em; }
+  body.booting .sheet, body.booting .tabbar { visibility: hidden; }
+
+  /* The locked target, on the globe just above the timeline. Release is red, like RELEASE TARGET. */
+  .target-chip { position: absolute; left: 12px; right: 12px; bottom: 74px; z-index: 2; display: flex; gap: 6px; }
+  .target-chip[hidden] { display: none; }
+  .chip-open {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    padding: 4px 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: left;
+    background: rgba(8, 11, 12, 0.85);
+    border-color: var(--amber-dim);
+  }
+  .chip-open b { overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+  .chip-alt { flex: none; color: var(--amber-mid); }
+  .chip-more { flex: none; margin-left: auto; font-size: 11px; color: var(--amber-mid); }
+  .chip-open:hover .chip-alt, .chip-open:hover .chip-more { color: var(--bg); }
+  .chip-release { flex: none; padding: 4px 10px; background: rgba(8, 11, 12, 0.85); color: var(--warn); border-color: rgba(255, 51, 51, 0.55); text-shadow: 0 0 3px rgba(255, 51, 51, 0.5); }
+  .chip-release:hover { background: var(--warn); color: var(--bg); text-shadow: none; }
+
+  /* Foldable dossier sections: ▾ open, ▸ folded. */
+  .dossier h4.fold-h { cursor: pointer; }
+  .dossier h4.fold-h::before { content: '▾'; }
+  .dossier h4.fold-h.shut::before { content: '▸'; }
+  .dossier .folded { display: none !important; }
 }
 
 /* ---------- Right column tabs ---------- */
@@ -581,7 +654,7 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 .hud.bc { bottom: 14px; left: 50%; transform: translateX(-50%); font: 400 20px/1.1 var(--pixel); border-color: var(--warn); }
 .hud.bc[hidden] { display: none; }
 @media (max-width: 900px) {
-  .hud.bc { bottom: 72px; } /* above the timeline strip */
+  .hud.bc { bottom: 118px; } /* above the timeline strip and the target chip */
 }
 /* Narrow phones: the display switches would run off the left edge, so drop their small labels (the
    buttons name themselves) and wrap onto a second line rather than clip on the very narrowest screens. */

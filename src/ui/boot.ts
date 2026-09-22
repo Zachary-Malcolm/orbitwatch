@@ -296,7 +296,9 @@ function runBoot() {
   const dotsFull = (label: string) => `${label} ${'.'.repeat(Math.max(2, 20 - label.length))}`;
 
   const frame = (now: number) => {
-    const ms = now - t0;
+    // The frame's timestamp can be earlier than t0 (it marks the frame's start, and a busy device can
+    // start the boot midway through a long frame); a negative time would break the dot animations.
+    const ms = Math.max(0, now - t0);
     $('boot-globe').innerHTML = globeFrame(ms / 1000);
 
     // Log lines type out in their turn, then show their (real) result.
