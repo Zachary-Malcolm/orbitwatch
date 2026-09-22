@@ -27,15 +27,15 @@ const STEPS: Step[] = [
     title: 'THE GLOBE',
     text: () => {
       const n = app.layer?.sats.length;
-      const count = n ? `${n.toLocaleString('en-GB')} right now` : 'about 18,700';
-      return `Every dot is a real object in orbit (${count}): active satellites plus debris from the four biggest break-ups, positioned in your browser from today's published orbital data. Drag to spin the globe, scroll or pinch to zoom, and click a dot to lock onto it.`;
+      const count = n ? `${n.toLocaleString('en-GB')} are tracked right now` : 'about 18,700 are tracked';
+      return `Every dot is a real object in orbit, positioned in your browser from today's published orbital data (${count}, counting debris from the four biggest break-ups). Drag to spin the globe, scroll or pinch to zoom, and click a dot to lock onto it.`;
     },
   },
   {
     target: q('.left > .layers'),
     title: 'WHAT THE SHAPES MEAN',
     text: () =>
-      'Each kind of object has its own colour and shape, so you can tell them apart even in the all-amber display: space stations, Starlink, OneWeb, navigation, Earth observation, other satellites and debris. Click a row to hide or show that kind.',
+      'Each kind of object has its own colour and shape, so you can tell them apart even in the all-amber display. To keep things clear you start with space stations, navigation and Earth observation; click a row to switch on Starlink, OneWeb, other satellites or debris, which together add about 18,000 more.',
   },
   {
     target: q('.left > .search'),

@@ -55,7 +55,9 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
   also shows news about that object: by its common name (the ISS, Hubble, Tiangong…), otherwise its constellation
   (e.g. the Starlink programme), and says so when an object has no coverage rather than showing unrelated stories
 - **Shareable links**: `#norad=25544` opens a satellite; `#norad=A&with=B&t=<ISO time>` opens a specific close approach
-- Search by name or NORAD ID, filter by constellation, and fast-forward time up to 1000×
+- Search by name or NORAD ID, filter by constellation, and fast-forward time up to 1000×. The view starts with
+  space stations, navigation and Earth observation only; the layer filter switches on Starlink, OneWeb, other
+  satellites and debris
 - **Timeline**: drag through the next 24 hours and watch everything move; the locked target's passes over the
   station are marked on it (brighter when visible to the naked eye), so you can drag straight to the next one.
   On phones it sits on the bottom of the globe, with a finger-sized handle, so the globe stays in view
