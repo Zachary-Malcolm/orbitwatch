@@ -276,7 +276,13 @@
 
     <!-- Boot screen, shown while the terminal starts up (src/ui/boot.ts). -->
     <div id="boot" class="boot" role="status" aria-label="OrbitWatch is starting up">
-      <div class="boot-inner">
+      <div class="boot-prompt" id="boot-prompt" hidden>
+        <p class="bp-brand">▓▒░ ORBITWATCH MK-II</p>
+        <p class="bp-press">PRESS ANY KEY TO POWER ON<span class="bp-cursor">█</span></p>
+        <p class="bp-hint" id="boot-hint">OR TAP ANYWHERE</p>
+        <button class="bp-muted" id="boot-muted">[ START MUTED ]</button>
+      </div>
+      <div class="boot-inner" id="boot-inner">
         <div class="boot-logo" id="boot-logo" aria-hidden="true"></div>
         <p class="boot-sub">ORBITAL SURVEILLANCE TERMINAL // MK-II</p>
         <div class="boot-main">

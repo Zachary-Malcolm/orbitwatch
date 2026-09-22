@@ -724,6 +724,14 @@ body.booting { overflow: hidden; }
   cursor: pointer;
 }
 .boot-inner { width: min(780px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.boot-inner[hidden], .boot-prompt[hidden] { display: none; }
+/* The power-on prompt: a key press is what lets the boot sequence play its sounds. */
+.boot-prompt { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.bp-brand { margin: 0; letter-spacing: 0.3em; color: var(--amber-mid); }
+.bp-press { margin: 0; font: 400 clamp(26px, 5vw, 46px)/1.1 var(--pixel); letter-spacing: 0.06em; }
+.bp-cursor { margin-left: 0.15em; animation: blink 1s steps(1) infinite; }
+.bp-hint { margin: 0; font-size: 12px; letter-spacing: 0.15em; color: var(--amber-dim); text-shadow: none; }
+.bp-muted { margin-top: 4px; font-size: 12px; color: var(--amber-mid); border-color: var(--amber-dim); }
 .boot-logo { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 2px; width: 100%; }
 .boot-logo i { aspect-ratio: 1; }
 .boot-logo i.on {
@@ -779,6 +787,7 @@ body.powering #app { transform-origin: 50% 50vh; animation: crt-on 0.55s ease-ou
   .boot-sub { letter-spacing: 0.15em; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .bp-cursor { animation: none; }
   .boot-logo i.on { animation: none; opacity: 1; }
   .boot-bar i.hot, .boot.ready .boot-status { animation: none; }
   .boot.off { animation: none; opacity: 0; }

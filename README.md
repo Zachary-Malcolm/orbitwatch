@@ -65,10 +65,13 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
   and sets over the station, a countdown that quickens into an alarm at closest approach, a low sonar ping from the
   standby radar, a bell for breaking news and faint teletype chatter from the ticker. All synthesised live with
   the Web Audio API from square and triangle waves and filtered noise, no audio files
-- **Boot screen**: a pixel logo that flickers on, a spinning ASCII globe with satellites in orbit, a start-up log
+- **Boot screen**: opens on a "PRESS ANY KEY TO POWER ON" prompt (the press is what lets the browser play
+  sound; [ START MUTED ] skips the sound, and muted visitors skip the prompt), then a pixel logo that flickers on, a spinning ASCII globe with satellites in orbit, a start-up log
   and a chunky segmented loading bar, then a CRT switch-on into the dashboard. The five-second pacing is
   theatre, but every log line reports something real (this device, the catalogue that actually arrived,
-  imagery tiles, news stories) and the bar can't finish until the satellite catalogue has really loaded
+  imagery tiles, news stories) and the bar can't finish until the satellite catalogue has really loaded.
+  It has its own sounds: static as the logo lights, typewriter keys, a blip per [ OK ], a tick per bar segment
+  that climbs two octaves as it fills, a rising arpeggio at SYSTEM READY and a zap and hum for the switch-on
 - **Guided tour** for first-time visitors: a welcome card, then eight short steps that highlight each panel in turn
   and end by locking onto the ISS. It can be skipped or switched off, never appears for visitors arriving on a
   shared link, and can be replayed from the `[?]` button in the status bar

@@ -57,7 +57,7 @@ function audio(): AudioContext | null {
     master = ctx.createGain();
     master.gain.value = VOLUME[level];
     master.connect(warm).connect(ctx.destination);
-    noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+    noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
     // The terminal warms up the first time sound is allowed.
@@ -114,7 +114,7 @@ function tick(at: number, dur: number, gain: number, freq: number, q = 1.2) {
   env.gain.setValueAtTime(gain, t);
   env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   src.connect(band).connect(env).connect(master);
-  src.start(t, Math.random() * 0.05);
+  src.start(t, Math.random() * 0.1);
   src.stop(t + dur + 0.01);
 }
 
@@ -127,6 +127,19 @@ function throttle(name: string, ms: number): boolean {
 }
 
 export const soundLevel = () => level;
+
+/** Start the audio engine now, inside the visitor's click or key press (it plays the power-on). */
+export function unlockAudio() {
+  audio();
+}
+
+/** Turn sound off (the boot prompt's START MUTED). */
+export function muteSound() {
+  level = 'off';
+  enabled = false;
+  saveLevel();
+  renderButton();
+}
 
 export const sfx = {
   /** Key click: any button, link or list row. */
@@ -203,6 +216,38 @@ export const sfx = {
   eclipse(entering: boolean) {
     if (entering) tone(262, 0, 0.4, { type: 'triangle', gain: 0.7, slideTo: 175 });
     else tone(392, 0, 0.3, { type: 'triangle', gain: 0.6, slideTo: 587 });
+  },
+  // ---- Boot screen ----
+  /** Static crackling across the logo as its pixels light up. */
+  crackle() {
+    for (let k = 0; k < 26; k++) tick(0.1 + k * 0.034 + Math.random() * 0.02, 0.012, 0.35 + Math.random() * 0.3, 2500 + Math.random() * 3000);
+  },
+  /** A typewriter key as a boot-log line types out (at most every 35 ms). */
+  key() {
+    if (throttle('key', 35)) tick(0, 0.008, 0.4, 1800 + Math.random() * 900);
+  },
+  /** A start-up check passing ([ OK ], a crisp blip) or failing (a low buzz). */
+  check(ok: boolean) {
+    if (ok) tone(1568, 0, 0.03, { gain: 0.3 });
+    else tone(147, 0, 0.18, { type: 'sawtooth', gain: 0.4 });
+  },
+  /** Loading-bar segment `i` of `of` lighting up: the pitch climbs two octaves as the bar fills. */
+  segment(i: number, of: number, at = 0) {
+    tone(196 * 2 ** ((2 * i) / of), at, 0.022, { gain: 0.22 });
+  },
+  /** Boot complete: a rising arpeggio. */
+  ready() {
+    [523, 659, 784, 1047].forEach((f, k) => tone(f, k * 0.07, k === 3 ? 0.4 : 0.08, { type: 'triangle', gain: 0.6, ring: k === 3 }));
+  },
+  /** The boot screen collapsing to a line: a falling electrical zap. */
+  crtOff() {
+    tone(1400, 0, 0.35, { type: 'sawtooth', gain: 0.25, slideTo: 60 });
+    tick(0, 0.3, 0.6, 900, 0.7);
+  },
+  /** The dashboard opening out of the line: a thunk and a rising hum. */
+  crtOn() {
+    tick(0, 0.1, 1, 160, 0.8);
+    tone(70, 0, 0.5, { type: 'triangle', gain: 0.7, slideTo: 180 });
   },
   /** Data received: a burst of 1200/2200 Hz tones, the Bell 202 modem signal. */
   modem() {

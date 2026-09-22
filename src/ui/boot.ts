@@ -1,7 +1,7 @@
 import { loadObserver } from '../observer';
 import { globe } from './context';
 import { $ } from './dom';
-import { sfx } from './sound';
+import { muteSound, sfx, soundLevel, unlockAudio } from './sound';
 
 // The boot screen shown while the terminal starts up: a pixel logo that flickers on, a spinning ASCII
 // globe with satellites in orbit, a start-up log and a chunky segmented loading bar, then a CRT
@@ -10,7 +10,9 @@ import { sfx } from './sound';
 // The pacing is theatre (about five seconds) but the content is not: every log line reports something
 // real (this device, the catalogue that actually arrived, imagery tiles streaming, stories received),
 // and the bar cannot reach 100% until the satellite catalogue has really loaded. On a slow link it
-// holds near the end, awaiting the downlink. Any key or tap skips it.
+// holds near the end, awaiting the downlink. Any key or tap skips it. Unless sound is muted, it opens on
+// a press-any-key prompt, because browsers only allow sound after the visitor has pressed something,
+// and the boot sequence has sounds of its own (see the boot section of sound.ts).
 
 const BOOT_MS = 5000;
 const SEGMENTS = 32;
@@ -228,10 +230,45 @@ let resolveBooted: () => void;
 /** Resolves once the boot screen has gone and the dashboard is showing. */
 export const whenBooted = new Promise<void>((resolve) => (resolveBooted = resolve));
 
+/**
+ * Show the boot screen. Browsers only allow sound after the visitor has pressed something, so unless
+ * sound is muted it opens on a "PRESS ANY KEY TO POWER ON" prompt, and that press starts both the
+ * audio and the boot sequence. (The catalogue is already downloading behind the prompt.)
+ */
 export function startBoot() {
-  const boot = $('boot');
   document.body.classList.add('booting');
+  if (soundLevel() === 'off') return runBoot();
+
+  const prompt = $('boot-prompt');
+  const inner = $('boot-inner');
+  prompt.hidden = false;
+  inner.hidden = true;
+  $('boot-hint').textContent = `OR TAP ANYWHERE · SOUND ${soundLevel().toUpperCase()}`;
+  const muted = $('boot-muted');
+  const go = (withSound: boolean) => {
+    removeEventListener('keydown', onKey);
+    $('boot').removeEventListener('click', onClick);
+    if (withSound) unlockAudio();
+    else muteSound();
+    prompt.hidden = true;
+    inner.hidden = false;
+    // Let this press finish before the boot starts listening for a skip.
+    setTimeout(runBoot, 0);
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (['Tab', 'Shift', 'Control', 'Alt', 'Meta'].includes(e.key) || e.target === muted) return;
+    go(true);
+  };
+  // Click rather than pointerdown: on touch screens only the end of a tap counts as permission for sound.
+  const onClick = (e: MouseEvent) => go(e.target !== muted);
+  addEventListener('keydown', onKey);
+  $('boot').addEventListener('click', onClick);
+}
+
+function runBoot() {
+  const boot = $('boot');
   buildLogo();
+  sfx.crackle();
 
   const bar = $('boot-bar');
   const segs = Array.from({ length: SEGMENTS }, () => document.createElement('i'));
@@ -252,6 +289,7 @@ export function startBoot() {
 
   const t0 = performance.now();
   let progress = 0;
+  let litShown = 0;
   let finishing = false;
   let raf = 0;
   const dotsFull = (label: string) => `${label} ${'.'.repeat(Math.max(2, 20 - label.length))}`;
@@ -268,6 +306,7 @@ export function startBoot() {
       const typed = Math.min(1, (ms - line.at) / 220);
       const full = dotsFull(line.label);
       row.label.textContent = `> ${full.slice(0, Math.ceil(full.length * typed))}`;
+      if (typed < 1) sfx.key();
       if (typed < 1 || row.result) continue;
       const result = line.value() ?? (line.pending && ms > line.at + 400 ? { text: line.pending, ok: true } : null);
       if (result) {
@@ -275,6 +314,7 @@ export function startBoot() {
         row.value.textContent = ` ${result.text}`;
         row.tag.textContent = result.ok ? ' [ OK ]' : ' [FAIL]';
         row.tag.classList.toggle('fail', !result.ok);
+        sfx.check(result.ok);
       } else {
         row.value.textContent = ` ${'.'.repeat(1 + (Math.floor(ms / 250) % 3))}`;
       }
@@ -286,8 +326,13 @@ export function startBoot() {
     progress = Math.max(progress, Math.min(target, progress + 0.02 + (catalogueIn && ms > BOOT_MS ? 0.05 : 0)));
     const lit = Math.round(progress * SEGMENTS);
     segs.forEach((s, i) => (s.className = i < lit - 1 ? 'on' : i === lit - 1 ? 'on hot' : ''));
+    // Each newly lit segment ticks, higher as the bar fills (a burst plays as a quick run up).
+    for (let i = litShown; i < lit; i++) sfx.segment(i, SEGMENTS, (i - litShown) * 0.03);
+    litShown = Math.max(litShown, lit);
     $('boot-pct').textContent = `${String(Math.round(progress * 100)).padStart(3, '0')}%`;
-    const status = !catalogueIn && progress >= 0.9 ? 'AWAITING DOWNLINK' : [...STATUS].reverse().find(([p]) => progress >= p)![1];
+    const waiting = !catalogueIn && progress >= 0.9;
+    if (waiting) sfx.modem();
+    const status = waiting ? 'AWAITING DOWNLINK' : [...STATUS].reverse().find(([p]) => progress >= p)![1];
     $('boot-status').textContent = progress >= 1 ? 'SYSTEM READY' : `${status}${'.'.repeat(1 + (Math.floor(ms / 300) % 3))}`;
 
     if (progress >= 1 && rows.every((r) => r.result)) {
@@ -296,6 +341,7 @@ export function startBoot() {
       final.classList.toggle('fail', degraded);
       final.textContent = degraded ? '> DEGRADED · SEE EVENT LOG' : '> ALL SYSTEMS NOMINAL';
       boot.classList.add('ready');
+      sfx.ready();
       return finish(650);
     }
     raf = requestAnimationFrame(frame);
@@ -310,10 +356,12 @@ export function startBoot() {
     setTimeout(() => {
       // CRT switch-on: the boot screen collapses to a bright line, then the dashboard opens out of it.
       boot.classList.add('off');
+      sfx.crtOff();
       setTimeout(() => {
         boot.remove();
         document.body.classList.remove('booting');
         document.body.classList.add('powering');
+        sfx.crtOn();
         setTimeout(() => {
           document.body.classList.remove('powering');
           resolveBooted();
@@ -321,11 +369,7 @@ export function startBoot() {
       }, 420);
     }, holdMs);
   };
-  // A key or tap is also the gesture that lets audio start: it plays the click (and the power-on).
-  const skip = () => {
-    sfx.click();
-    finish(0);
-  };
+  const skip = () => finish(0);
   addEventListener('keydown', skip);
   boot.addEventListener('pointerdown', skip);
   raf = requestAnimationFrame(frame);
