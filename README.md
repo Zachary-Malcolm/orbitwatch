@@ -92,7 +92,8 @@ npm run typecheck  # TypeScript check
 ```
 
 The README screenshots and GIF are generated from the live site by `npm run capture`, which drives a locally installed
-Chrome through Playwright (see `scripts/capture-readme.mjs`).
+Chrome through Playwright (see `scripts/capture-readme.mjs`). The link-preview card (`public/og-image.jpg`, used by
+LinkedIn, iMessage, Slack and others) is rendered from `scripts/og-card.html` by `npm run og-image`.
 
 ## How it works
 

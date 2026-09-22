@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #080b0c; color: #ffb000; font-family: 'Share Tech Mono', monospace;
+    text-shadow: 0 0 3px rgba(255,176,0,.55);
+    background-image: linear-gradient(#1a261c 1px, transparent 1px), linear-gradient(90deg, #1a261c 1px, transparent 1px); background-size: 24px 24px; }
+  .frame { position: absolute; inset: 18px; border: 1px solid rgba(255,176,0,.36); background: rgba(8,11,12,.92); }
+  .left { position: absolute; left: 58px; top: 84px; width: 560px; }
+  .logo { display: grid; grid-template-columns: repeat(59, 1fr); gap: 2px; width: 540px; }
+  .logo i { aspect-ratio: 1; }
+  .logo i.on { background: #ffb000; box-shadow: 0 0 6px rgba(255,176,0,.6); }
+  .sub { margin: 18px 0 0; font-size: 15px; letter-spacing: .3em; color: rgba(255,176,0,.62); }
+  .lead { margin: 30px 0 0; font: 400 38px/1.05 'VT323', monospace; letter-spacing: .02em; color: #ffe2a0; }
+  ul { list-style: none; margin: 26px 0 0; padding: 0; font-size: 19px; line-height: 1.75; }
+  li::before { content: '\25B8  '; color: #56ff8a; text-shadow: 0 0 3px rgba(86,255,138,.55); }
+  .url { position: absolute; left: 58px; bottom: 50px; font-size: 16px; letter-spacing: .12em; color: rgba(255,176,0,.62); }
+  .live { color: #080b0c; background: #ff3333; padding: 1px 8px; margin-left: 14px; text-shadow: none; }
+  .scope { position: absolute; right: 52px; top: 52px; width: 526px; height: 526px; border: 1px solid rgba(255,176,0,.36);
+    background: url("../docs/media/hero.jpg") no-repeat; background-size: 1709px 961px; background-position: -554px -116px; }
+  .scope::before, .scope::after, .scope i::before, .scope i::after { content: ''; position: absolute; width: 26px; height: 26px; border: 2px solid #ffb000; }
+  .scope::before { left: 10px; top: 10px; border-right: none; border-bottom: none; }
+  .scope::after { right: 10px; top: 10px; border-left: none; border-bottom: none; }
+  .scope i::before { left: 10px; bottom: 10px; border-right: none; border-top: none; }
+  .scope i::after { right: 10px; bottom: 10px; border-left: none; border-top: none; }
+  .crt { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 3px); }
+  .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.5) 100%); }
+</style></head>
+<body>
+  <div class="frame"></div>
+  <div class="left">
+    <div class="logo" id="logo"></div>
+    <p class="sub">ORBITAL SURVEILLANCE TERMINAL // MK-II</p>
+    <p class="lead">LIVE 3D TRACKER OF EVERY<br>SATELLITE IN EARTH ORBIT</p>
+    <ul>
+      <li>~16,000 SATELLITES + ~2,700 DEBRIS FRAGMENTS</li>
+      <li>REAL SGP4 ORBITAL MECHANICS, IN THE BROWSER</li>
+      <li>CLOSE APPROACHES · PASS PREDICTIONS</li>
+    </ul>
+  </div>
+  <div class="url">ZACHARY-MALCOLM.GITHUB.IO/ORBITWATCH<span class="live">● LIVE</span></div>
+  <div class="scope"><i></i></div>
+  <div class="crt"></div><div class="vignette"></div>
+<script>
+  const F = { O:[' ### ','#   #','#   #','#   #',' ### '], R:['#### ','#   #','#### ','#  # ','#   #'], B:['#### ','#   #','#### ','#   #','#### '],
+    I:['#####','  #  ','  #  ','  #  ','#####'], T:['#####','  #  ','  #  ','  #  ','  #  '], W:['#   #','#   #','# # #','# # #',' # # '],
+    A:[' ### ','#   #','#####','#   #','#   #'], C:[' ####','#    ','#    ','#    ',' ####'], H:['#   #','#   #','#####','#   #','#   #'] };
+  const word = 'ORBITWATCH', logo = document.getElementById('logo');
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 59; c++) { const i = document.createElement('i'); if (c % 6 < 5 && F[word[Math.floor(c / 6)]][r][c % 6] === '#') i.className = 'on'; logo.append(i); }
+</script>
+</body></html>

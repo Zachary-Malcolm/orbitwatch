@@ -16,6 +16,7 @@ npm run build     # tsc + vite build (production base path is /orbitwatch/)
 npm test          # Vitest unit tests for the maths (test/), ~1 s
 npm run typecheck # tsc --noEmit (includes the tests)
 npm run capture   # regenerate README media in docs/media from the live site (drives local Chrome)
+npm run og-image  # regenerate the link-preview card public/og-image.jpg from scripts/og-card.html
 ```
 
 GitHub Actions runs typecheck + tests on every push (`.github/workflows/ci.yml`), and the deploy workflow
