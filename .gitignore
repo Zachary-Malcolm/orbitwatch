@@ -25,3 +25,4 @@ dist-ssr
 
 # Satellite catalogue mirrored by the deploy workflow
 public/data
+.celestrak-cache

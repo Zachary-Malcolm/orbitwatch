@@ -36,8 +36,16 @@ jobs:
       - run: npm test
       # Mirror CelesTrak's catalogues into the site, so visitors never hit CelesTrak's per-IP download
       # limit. The script reuses the published copy when it is under 2 hours old (so pushes in a row
-      # don't re-download) and times out rather than hang. If it fails, the site falls back to
-      # fetching CelesTrak directly in the browser.
+      # don't re-download), times out rather than hang, never publishes an empty file, and falls back
+      # to the last good copy if CelesTrak refuses. Only if there is no copy at all does the site
+      # fetch CelesTrak directly in the browser.
+      # The last good catalogue from an earlier run, for when CelesTrak refuses a download.
+      - name: Restore last good catalogue
+        uses: actions/cache/restore@v4
+        with:
+          path: .celestrak-cache
+          key: celestrak-${{ github.run_id }}
+          restore-keys: celestrak-
       - name: Fetch satellite catalogue
         continue-on-error: true
         run: bash scripts/mirror-celestrak.sh active active
@@ -45,6 +53,13 @@ jobs:
       - name: Fetch debris catalogue
         continue-on-error: true
         run: bash scripts/mirror-celestrak.sh debris fengyun-1c-debris cosmos-2251-debris iridium-33-debris cosmos-1408-debris
+      - name: Save last good catalogue
+        if: hashFiles('.celestrak-cache/*.tle') != ''
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .celestrak-cache
+          key: celestrak-${{ github.run_id }}
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

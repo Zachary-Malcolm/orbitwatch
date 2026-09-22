@@ -32,7 +32,11 @@ groups. The production app reads that mirror, because CelesTrak returns 403 to a
 a group within 2 hours. **Don't fetch CelesTrak groups repeatedly while testing**; the dev app caches them
 in the browser's Cache API for 2 hours.
 `scripts/mirror-celestrak.sh` does the mirroring: it reuses the site's published copy if it is under 2 hours
-old (so several pushes in a row don't re-download) and every request has a time limit. It can be tested
+old (so several pushes in a row don't re-download), every request has a time limit, a failed download never
+publishes an empty file, and if CelesTrak refuses it falls back to the last good copy (kept in the Actions
+cache, `.celestrak-cache`) or the published copy at any age. Testing the *live* site repeatedly from one
+machine can get that machine's address blocked by CelesTrak when the mirror is missing (the site then fetches
+CelesTrak directly); prefer the local preview build. It can be tested
 without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local server.
 
 ## Rules the owner cares about
@@ -63,7 +67,7 @@ without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local 
   TIME · MORE); panels are moved into a bottom sheet (half / nearly full, drag the grip) and back to their
   columns on wider screens, so find panels by class (`.mod.layers`), not by column. A chip on the globe shows
   the locked target with release; locking closes the sheet; dossier sections fold (Briefing/News/Approaches
-  start folded). The timeline sits on the globe.
+  start folded). The timeline sits under the speed buttons in the TIME tab.
 - Explain things in plain terms; Zach is learning. Confirm before anything public-facing (repo settings,
   publishing). Commit and push completed work (the repo auto-deploys).
 

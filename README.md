@@ -60,7 +60,7 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
   satellites and debris
 - **Timeline**: drag through the next 24 hours and watch everything move; the locked target's passes over the
   station are marked on it (brighter when visible to the naked eye), so you can drag straight to the next one.
-  On phones it sits on the bottom of the globe, with a finger-sized handle, so the globe stays in view
+  On phones it's in the TIME tab under the speed buttons, with a finger-sized handle
 - **Phone layout**: the globe fills the screen above a tab bar, and panels open in a bottom sheet (drag to
   resize) with the globe shrinking to stay whole above it, so every change is seen as it's made. A chip on the
   globe shows the locked target with a release button, and the dossier's long sections fold away
