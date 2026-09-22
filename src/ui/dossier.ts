@@ -3,16 +3,18 @@ import { fetchIntel, type CatalogInfo, type WikiInfo } from '../intel';
 import { newsFor } from '../news';
 import { log } from '../telemetry';
 import { blocks } from '../terminal';
-import { simNow } from './clock';
+import { clockJumps, simNow } from './clock';
 import { app, models } from './context';
 import { $ } from './dom';
 import { fmt } from './format';
 import { showObjectNews } from './newsPanel';
+import { sfx } from './sound';
 
 // The target dossier: identity, catalogue record, Wikipedia briefing and live telemetry.
 
 const CATALOG_FIELDS = ['d-owner', 'd-type', 'd-status', 'd-launch', 'd-site', 'd-rcs'];
 let lastSunlit: boolean | null = null;
+let sunlitJumps = 0;
 
 /** Fill the dossier header for a newly locked target and start fetching its intel. */
 export function showDossier(index: number) {
@@ -37,7 +39,10 @@ export function showDossier(index: number) {
   intel.catalog.then((c) => {
     if (app.layer?.selected !== index) return;
     showCatalog(c);
-    if (c) log('SATCAT', `${sat.noradId} · ${c.owner.code} · ${c.objectType} · ${c.status}`);
+    if (c) {
+      log('SATCAT', `${sat.noradId} · ${c.owner.code} · ${c.objectType} · ${c.status}`);
+      sfx.modem();
+    }
   });
   intel.wiki
     .then((w) => newsFor(sat, w))
@@ -45,6 +50,7 @@ export function showDossier(index: number) {
   intel.wiki.then((w) => {
     if (app.layer?.selected !== index) return;
     showWiki(w);
+    if (w) sfx.modem();
     log('WIKI', w ? `BRIEFING RETRIEVED · ${w.title}${w.context === 'own' ? '' : ` (${w.context})`}` : 'NO BRIEFING ON FILE', w ? 'info' : 'warn');
   });
 }
@@ -165,8 +171,14 @@ export function updateDetails() {
   const illum = $('d-illum');
   illum.textContent = d.sunlit ? '☼ SUNLIT' : '● ECLIPSE';
   illum.classList.toggle('shadow', !d.sunlit);
+  // After a clock jump the target may be on the other side of the terminator, but it didn't cross it.
+  if (sunlitJumps !== clockJumps()) {
+    sunlitJumps = clockJumps();
+    lastSunlit = null;
+  }
   if (lastSunlit !== null && lastSunlit !== d.sunlit) {
     log('ORBIT', `${layer.sats[layer.selected].name} ${d.sunlit ? 'EXITED' : 'ENTERED'} EARTH SHADOW`, d.sunlit ? 'ok' : 'warn');
+    sfx.eclipse(!d.sunlit);
   }
   lastSunlit = d.sunlit;
 }

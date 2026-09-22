@@ -6,12 +6,19 @@ import { $ } from './dom';
 let speed = 1;
 let anchorSim = Date.now();
 let anchorReal = performance.now();
+let jumps = 0;
 
 export const simNow = () => anchorSim + (performance.now() - anchorReal) * speed;
 export const clockSpeed = () => speed;
+/**
+ * Counts jumps of the clock (not speed changes). Watchers of state changes such as eclipses and rises
+ * compare it to tell a real change from a jump to a different moment, which they shouldn't announce.
+ */
+export const clockJumps = () => jumps;
 
 /** Set the simulated clock to `ms` and run it at `nextSpeed`. */
 export function jumpTo(ms: number, nextSpeed: number) {
+  if (Math.abs(ms - simNow()) > 1000) jumps++;
   anchorSim = ms;
   anchorReal = performance.now();
   speed = nextSpeed;

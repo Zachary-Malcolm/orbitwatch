@@ -50,6 +50,8 @@ without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local 
 - **Sound** (`src/ui/sound.ts`) is synthesised, on by default (silent until the first click; `[♪]` mutes), and must stay retro: square/triangle waves and
   filtered noise through the warm low-pass. New interactive controls get a click automatically (document-level
   listener); add switches to the toggle selector there.
+- **Announced state changes** (eclipse entry/exit, AOS/LOS) must ignore clock jumps: compare `clockJumps()` from
+  `src/ui/clock.ts` so a jump to another moment isn't logged or sounded as if it happened.
 - **Privacy:** the observer location stays in localStorage only. Never send it anywhere or put it in URLs.
   (The only other things stored are whether the guide has been seen and the sound on/off setting.)
 - **Honesty in the UI:** representative images and models are labelled as such; miss distances are

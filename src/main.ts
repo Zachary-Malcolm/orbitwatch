@@ -12,7 +12,7 @@ import { initTabs } from './ui/tabs';
 import { initSelection } from './ui/selection';
 import { initObserverPanel, updateObserverReadouts } from './ui/passesPanel';
 import { getConj, initConjunctionPanel, runScreening } from './ui/conjunctionPanel';
-import { holdAtClosestApproach, initEncounter, updateEncounterReadouts } from './ui/encounter';
+import { encounterCountdown, holdAtClosestApproach, initEncounter, updateEncounterReadouts } from './ui/encounter';
 import { applyHash, initLinks } from './ui/links';
 import { initDossier } from './ui/dossier';
 import { initNews } from './ui/newsPanel';
@@ -23,7 +23,7 @@ import { buildLegend } from './ui/legend';
 import { buildCensus, recordFrame, updateFastReadouts, updateGauges } from './ui/gauges';
 import { initTour, offerTour } from './ui/tour';
 import { initTimeline, updateTimeline } from './ui/timeline';
-import { initSound } from './ui/sound';
+import { initSound, sfx } from './ui/sound';
 
 // Entry point: wires up the terminal's panels (src/ui/), runs the frame loop and loads the catalogue.
 
@@ -51,10 +51,23 @@ initSound();
 const satPos = new THREE.Vector3();
 const beamTarget = new THREE.Vector3();
 let lastFast = 0;
+let radarTurn = NaN;
+
+/** The standby radar scope, which pings each time its sweep passes north (every ~4.4 s) while on screen. */
+function drawRadar(now: number) {
+  const angle = now / 700;
+  const radar = $('radar');
+  radar.textContent = radarFrame(angle);
+  const turn = Math.floor((angle - 1.5 * Math.PI) / (2 * Math.PI));
+  const r = radar.getBoundingClientRect();
+  if (turn !== radarTurn && !Number.isNaN(radarTurn) && r.bottom > 0 && r.top < innerHeight) sfx.ping();
+  radarTurn = turn;
+}
 
 function frame(now: number) {
   const t0 = performance.now();
   const sim = holdAtClosestApproach(simNow());
+  encounterCountdown(sim);
   globe.setTime(new Date(sim));
   const layer = app.layer;
   if (layer) {
@@ -83,7 +96,7 @@ function frame(now: number) {
     updateEncounterReadouts(sim);
     updateObserverReadouts(sim);
     updateTimeline(sim);
-    if (!$('standby').hidden) $('radar').textContent = radarFrame(now / 700);
+    if (!$('standby').hidden) drawRadar(now);
   }
   updateGauges(now);
 

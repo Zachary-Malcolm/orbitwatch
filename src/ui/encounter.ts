@@ -17,6 +17,7 @@ import { sfx } from './sound';
 
 const ENCOUNTER_LEAD_MS = 30_000;
 let encounter: (Conjunction & { held: boolean }) | null = null;
+let lastBeat = '';
 
 export const currentEncounter = (): Conjunction | null => encounter;
 
@@ -62,6 +63,24 @@ export function holdAtClosestApproach(sim: number): number {
   log('CONJ', `CLOSEST APPROACH · ${sep ? fmtKm(sep.km) : '--'} · HELD AT TCA`, 'warn');
   sfx.alarm();
   return encounter.tcaMs;
+}
+
+/**
+ * Called each frame: countdown beeps over the last 10 s before closest approach, every second and then
+ * every half second for the last 3, climbing in pitch (the alarm sounds when the clock holds at TCA).
+ */
+export function encounterCountdown(sim: number) {
+  const dt = encounter && !encounter.held && clockSpeed() > 0 ? encounter.tcaMs - sim : -1;
+  if (dt <= 0 || dt > 10_000) {
+    lastBeat = '';
+    return;
+  }
+  const fast = dt <= 3000;
+  const unit = Math.ceil(dt / (fast ? 500 : 1000));
+  const beat = `${fast ? 'h' : 's'}${unit}`;
+  if (beat === lastBeat) return;
+  lastBeat = beat;
+  sfx.countdown(fast ? 13 - unit : 10 - unit);
 }
 
 export function updateEncounterReadouts(sim: number) {

@@ -6,32 +6,37 @@ import { $ } from './dom';
 // and home computers, and runs through one gentle low-pass filter so nothing is harsh: the audio
 // equivalent of the phosphor glow.
 //
-// On by default; the [♪] button in the status bar mutes it, and the choice is remembered in this
-// browser only. Browsers only allow audio after the visitor has interacted with the page, so the
+// On by default; the [♪] button in the status bar steps through HIGH → LOW → OFF, and the choice is
+// remembered in this browser only. Browsers only allow audio after the visitor has interacted with the page, so the
 // audio engine starts on a click or key press and anything before that stays silent: the first sound
 // a visitor hears is their own first click. On iPhone the
 // ring/silent switch still mutes it, which is deliberate: the visitor's choice wins.
 
 const STORAGE_KEY = 'orbitwatch.sound';
-const VOLUME = 0.16;
 
-let enabled = loadEnabled();
+type Level = 'high' | 'low' | 'off';
+const VOLUME: Record<Level, number> = { high: 0.16, low: 0.06, off: 0 };
+const NEXT: Record<Level, Level> = { high: 'low', low: 'off', off: 'high' };
+
+let level = loadLevel();
+let enabled = level !== 'off';
 let ctx: AudioContext | null = null;
 let master: GainNode;
 let noiseBuffer: AudioBuffer;
 const lastPlayed = new Map<string, number>();
 
-function loadEnabled(): boolean {
+function loadLevel(): Level {
   try {
-    return localStorage.getItem(STORAGE_KEY) !== 'off';
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === 'low' || saved === 'off' ? saved : 'high'; // 'on' (the old setting) means high
   } catch {
-    return true;
+    return 'high';
   }
 }
 
-function saveEnabled() {
+function saveLevel() {
   try {
-    localStorage.setItem(STORAGE_KEY, enabled ? 'on' : 'off');
+    localStorage.setItem(STORAGE_KEY, level);
   } catch {
     // Storage unavailable: the setting just lasts for this visit.
   }
@@ -50,11 +55,13 @@ function audio(): AudioContext | null {
     warm.type = 'lowpass';
     warm.frequency.value = 3200;
     master = ctx.createGain();
-    master.gain.value = VOLUME;
+    master.gain.value = VOLUME[level];
     master.connect(warm).connect(ctx.destination);
     noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    // The terminal warms up the first time sound is allowed.
+    queueMicrotask(() => sfx.powerOn());
   }
   if (ctx.state === 'running') return ctx;
   // Suspended until a gesture: resume it, and only schedule sounds if this is that gesture
@@ -91,7 +98,7 @@ function tone(freq: number, at: number, dur: number, { type = 'square', gain = 1
 }
 
 /** A burst of band-passed noise: the mechanical part of a key or relay click. */
-function tick(at: number, dur: number, gain: number, freq: number) {
+function tick(at: number, dur: number, gain: number, freq: number, q = 1.2) {
   const c = audio();
   if (!c) return;
   const t = c.currentTime + at;
@@ -100,7 +107,7 @@ function tick(at: number, dur: number, gain: number, freq: number) {
   const band = c.createBiquadFilter();
   band.type = 'bandpass';
   band.frequency.value = freq;
-  band.Q.value = 1.2;
+  band.Q.value = q;
   const env = c.createGain();
   env.gain.setValueAtTime(gain, t);
   env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -117,7 +124,7 @@ function throttle(name: string, ms: number): boolean {
   return true;
 }
 
-export const soundOn = () => enabled;
+export const soundLevel = () => level;
 
 export const sfx = {
   /** Key click: any button, link or list row. */
@@ -171,6 +178,31 @@ export const sfx = {
   scrub() {
     if (throttle('scrub', 45)) tick(0, 0.008, 0.5, 3000);
   },
+  /** CRT power-on: a relay thunk, the tube's hum rising, and a faint high whine settling in. */
+  powerOn() {
+    tick(0, 0.14, 1.4, 140, 0.8);
+    tone(55, 0.02, 0.6, { type: 'triangle', gain: 0.9, slideTo: 220 });
+    tone(2600, 0.1, 0.7, { type: 'sine', gain: 0.05, slideTo: 3100 });
+  },
+  /** One beep of the closest-approach countdown; `step` counts up to 13 and the pitch climbs with it. */
+  countdown(step: number) {
+    tone(880 + step * 55, 0, 0.04, { gain: 0.4 });
+  },
+  /** The standby radar's sweep passing north: a soft sonar ping and its echo. */
+  ping() {
+    tone(1175, 0, 0.5, { type: 'triangle', gain: 0.22 });
+    tone(1175, 0.2, 0.4, { type: 'triangle', gain: 0.07 });
+  },
+  /** The locked target entering Earth's shadow (a low falling tone) or coming back into sunlight. */
+  eclipse(entering: boolean) {
+    if (entering) tone(262, 0, 0.4, { type: 'triangle', gain: 0.7, slideTo: 175 });
+    else tone(392, 0, 0.3, { type: 'triangle', gain: 0.6, slideTo: 587 });
+  },
+  /** Data received: a burst of 1200/2200 Hz tones, the Bell 202 modem signal. */
+  modem() {
+    if (!throttle('modem', 1500)) return;
+    for (let k = 0; k < 12; k++) tone(Math.random() < 0.5 ? 1200 : 2200, k * 0.02, 0.02, { gain: 0.12 });
+  },
 };
 
 function isSwitchOn(el: Element): boolean {
@@ -181,19 +213,26 @@ function isSwitchOn(el: Element): boolean {
 
 function renderButton() {
   const btn = $('sound-btn');
+  // Filled when sound is on; two notes for high, one for low.
+  btn.textContent = level === 'high' ? '[♪♪]' : '[♪]';
   btn.classList.toggle('active', enabled);
   btn.setAttribute('aria-pressed', String(enabled));
-  btn.title = enabled ? 'Terminal sounds are on (click to mute)' : 'Terminal sounds are off (click to turn on)';
+  btn.setAttribute('aria-label', `Terminal sounds: ${level}`);
+  btn.title = { high: 'Sound: high (click for low)', low: 'Sound: low (click to mute)', off: 'Sound: off (click to turn on)' }[level];
 }
 
 export function initSound() {
   renderButton();
   $('sound-btn').addEventListener('click', () => {
-    enabled = !enabled;
-    saveEnabled();
+    // Say goodbye before muting: the blip is scheduled while sound is still on.
+    if (NEXT[level] === 'off') sfx.toggle(false);
+    level = NEXT[level];
+    enabled = level !== 'off';
+    saveLevel();
     renderButton();
+    if (ctx && enabled) master.gain.setTargetAtTime(VOLUME[level], ctx.currentTime, 0.02);
     if (enabled) sfx.toggle(true);
-    log('AUDIO', enabled ? 'TERMINAL SOUND ON' : 'TERMINAL SOUND OFF');
+    log('AUDIO', `TERMINAL SOUND · ${level.toUpperCase()}`);
   });
 
   // Every click on something interactive makes a sound. This listener is on the document, so it runs

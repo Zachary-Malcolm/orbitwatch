@@ -586,6 +586,9 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
 /* Narrow phones: the display switches would run off the left edge, so drop their small labels (the
    buttons name themselves) and wrap onto a second line rather than clip on the very narrowest screens. */
 @media (max-width: 480px) {
+  /* The status bar can't fit its UTC clock as well (the chrono panel shows the time). */
+  .statusbar { gap: 10px; }
+  .sb-utc { display: none; }
   .hud.tr { right: 12px; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: flex-end; }
   .hud.tr > span { display: none; }
 }

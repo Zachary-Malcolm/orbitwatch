@@ -15,7 +15,7 @@ import {
   type PassForecast,
 } from '../observer';
 import { log } from '../telemetry';
-import { jumpTo, simNow } from './clock';
+import { clockJumps, jumpTo, simNow } from './clock';
 import { app, observerMarker } from './context';
 import { $ } from './dom';
 import { fmt, hms, localTime } from './format';
@@ -29,6 +29,7 @@ let forecastFor = -1;
 let forecastAt = 0;
 let picking = false;
 let lastAbove: boolean | null = null;
+let aboveJumps = 0;
 
 export const getObserver = () => observer;
 /** The locked target's predicted passes over the station (empty if there's no station or target). */
@@ -119,6 +120,11 @@ export function updateObserverReadouts(sim: number) {
   const look = lookAt(layer.sats[sel].satrec, observer, date);
   if (!look) return;
   const above = look.elDeg > 0;
+  // A clock jump can land mid-pass, but the satellite didn't rise then: don't announce it.
+  if (aboveJumps !== clockJumps()) {
+    aboveJumps = clockJumps();
+    lastAbove = null;
+  }
   $('p-look').textContent = `AZ ${fmt(look.azDeg, 0)}° ${compass(look.azDeg)} · EL ${fmt(look.elDeg, 1)}° · ${fmt(look.rangeKm, 0)} KM`;
   $('p-now').textContent = above ? 'ABOVE HORIZON' : 'BELOW HORIZON';
   $('p-now').classList.toggle('shadow', !above);
