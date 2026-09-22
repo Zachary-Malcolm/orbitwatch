@@ -355,15 +355,14 @@ function runBoot() {
     removeEventListener('keydown', skip);
     boot.removeEventListener('pointerdown', skip);
     setTimeout(() => {
-      // The boot screen collapses to a line and goes dark, then the dashboard switches on like an
-      // old television (src/ui/tv.ts).
-      boot.classList.add('off');
-      sfx.crtOff();
-      setTimeout(() => {
-        boot.remove();
-        document.body.classList.remove('booting');
-        tvSwitchOn().then(resolveBooted);
-      }, 420);
+      // The boot screen snaps off to black, then the dashboard switches on like an old television
+      // (src/ui/tv.ts). The television's black screen goes up before the boot screen comes down,
+      // so the dashboard is never seen before the static reveals it.
+      sfx.snapOff();
+      const switchingOn = tvSwitchOn();
+      boot.remove();
+      document.body.classList.remove('booting');
+      switchingOn.then(resolveBooted);
     }, holdMs);
   };
   const skip = () => finish(0);

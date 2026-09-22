@@ -239,10 +239,10 @@ export const sfx = {
   ready() {
     [523, 659, 784, 1047].forEach((f, k) => tone(f, k * 0.07, k === 3 ? 0.4 : 0.08, { type: 'triangle', gain: 0.6, ring: k === 3 }));
   },
-  /** The boot screen collapsing to a line: a falling electrical zap. */
-  crtOff() {
-    tone(1400, 0, 0.35, { type: 'sawtooth', gain: 0.25, slideTo: 60 });
-    tick(0, 0.3, 0.6, 900, 0.7);
+  /** The boot screen snapping off to black: a sharp electrical pop. */
+  snapOff() {
+    tick(0, 0.06, 1.1, 320, 0.8);
+    tone(900, 0, 0.08, { gain: 0.2, slideTo: 180 });
   },
   /** The dashboard opening out of the line: a thunk and a rising hum. */
   crtOn() {

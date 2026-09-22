@@ -710,7 +710,9 @@ body.picking #globe canvas { cursor: crosshair !important; }
 /* ---------- Boot screen ----------
    Under the CRT scanlines (z-index 95 < 100). Amber throughout, except the loading bar and the
    [ OK ] tags, which use the gauges' P1 green, and failures, in warning red. */
+/* The dashboard stays hidden until the television switch-on reveals it (it keeps loading underneath). */
 body.booting { overflow: hidden; }
+body.booting #app { visibility: hidden; }
 .boot {
   position: fixed;
   inset: 0;
@@ -764,13 +766,6 @@ body.booting { overflow: hidden; }
 .boot.ready .boot-status { animation: blink 0.3s steps(1) 2; }
 .boot-skip { margin: 0; text-align: center; font-size: 11px; color: var(--amber-dim); text-shadow: none; opacity: 0; animation: boot-fade 0.6s 1.5s forwards; }
 @keyframes boot-fade { to { opacity: 1; } }
-/* The boot screen switching off: it collapses to a bright line and goes dark. */
-.boot.off { animation: crt-off 0.42s ease-in forwards; }
-@keyframes crt-off {
-  0% { transform: none; filter: none; }
-  55% { transform: scale(1, 0.006); filter: brightness(3); }
-  100% { transform: scale(0, 0.006); filter: brightness(4); opacity: 0; }
-}
 /* Then the dashboard switches on like an old television (animated by src/ui/tv.ts): a point of light,
    a bright line, rolling amber static, then the picture. Above the dashboard, under the scanlines. */
 .tv { position: fixed; inset: 0; z-index: 96; overflow: hidden; background: #000; pointer-events: none; }
@@ -822,5 +817,4 @@ body.booting { overflow: hidden; }
   .bp-cursor { animation: none; }
   .boot-logo i.on { animation: none; opacity: 1; }
   .boot-bar i.hot, .boot.ready .boot-status { animation: none; }
-  .boot.off { animation: none; opacity: 0; }
 }

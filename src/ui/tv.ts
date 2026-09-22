@@ -42,7 +42,10 @@ function startStatic(canvas: HTMLCanvasElement): () => void {
   return () => cancelAnimationFrame(raf);
 }
 
-/** Play the switch-on over the (already rendered) dashboard; resolves when it's done. */
+/**
+ * Play the switch-on over the (already rendered) dashboard; resolves when it's done. Its black screen
+ * is in place as soon as this is called, so the caller can take the boot screen down straight after.
+ */
 export async function tvSwitchOn(): Promise<void> {
   const app = document.getElementById('app')!;
   const tv = document.createElement('div');
@@ -64,7 +67,8 @@ export async function tvSwitchOn(): Promise<void> {
   app.style.transformOrigin = `50% ${scrollY + innerHeight / 2}px`;
   app.style.transform = 'scale(1, 0.004)';
 
-  // 1. A point of light blooms in the centre.
+  // 1. A moment of black, then a point of light blooms in the centre.
+  await wait(180);
   sfx.tvWhine();
   dot.animate(
     [
