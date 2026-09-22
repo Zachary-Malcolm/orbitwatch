@@ -2,6 +2,7 @@ import { loadObserver } from '../observer';
 import { globe } from './context';
 import { $ } from './dom';
 import { muteSound, sfx, soundLevel, unlockAudio } from './sound';
+import { tvSwitchOn } from './tv';
 
 // The boot screen shown while the terminal starts up: a pixel logo that flickers on, a spinning ASCII
 // globe with satellites in orbit, a start-up log and a chunky segmented loading bar, then a CRT
@@ -10,7 +11,7 @@ import { muteSound, sfx, soundLevel, unlockAudio } from './sound';
 // The pacing is theatre (about five seconds) but the content is not: every log line reports something
 // real (this device, the catalogue that actually arrived, imagery tiles streaming, stories received),
 // and the bar cannot reach 100% until the satellite catalogue has really loaded. On a slow link it
-// holds near the end, awaiting the downlink. Any key or tap skips it. Unless sound is muted, it opens on
+// holds near the end, awaiting the downlink. Any key or tap skips it (to the television switch-on). Unless sound is muted, it opens on
 // a press-any-key prompt, because browsers only allow sound after the visitor has pressed something,
 // and the boot sequence has sounds of its own (see the boot section of sound.ts).
 
@@ -354,18 +355,14 @@ function runBoot() {
     removeEventListener('keydown', skip);
     boot.removeEventListener('pointerdown', skip);
     setTimeout(() => {
-      // CRT switch-on: the boot screen collapses to a bright line, then the dashboard opens out of it.
+      // The boot screen collapses to a line and goes dark, then the dashboard switches on like an
+      // old television (src/ui/tv.ts).
       boot.classList.add('off');
       sfx.crtOff();
       setTimeout(() => {
         boot.remove();
         document.body.classList.remove('booting');
-        document.body.classList.add('powering');
-        sfx.crtOn();
-        setTimeout(() => {
-          document.body.classList.remove('powering');
-          resolveBooted();
-        }, 600);
+        tvSwitchOn().then(resolveBooted);
       }, 420);
     }, holdMs);
   };

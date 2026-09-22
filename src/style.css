@@ -764,19 +764,51 @@ body.booting { overflow: hidden; }
 .boot.ready .boot-status { animation: blink 0.3s steps(1) 2; }
 .boot-skip { margin: 0; text-align: center; font-size: 11px; color: var(--amber-dim); text-shadow: none; opacity: 0; animation: boot-fade 0.6s 1.5s forwards; }
 @keyframes boot-fade { to { opacity: 1; } }
-/* CRT switch-on: the boot screen collapses to a bright line and the dashboard opens out of it. */
+/* The boot screen switching off: it collapses to a bright line and goes dark. */
 .boot.off { animation: crt-off 0.42s ease-in forwards; }
 @keyframes crt-off {
   0% { transform: none; filter: none; }
   55% { transform: scale(1, 0.006); filter: brightness(3); }
   100% { transform: scale(0, 0.006); filter: brightness(4); opacity: 0; }
 }
-/* Open from the middle of the screen (on phones #app is the whole, much taller, scrolling page). */
-body.powering #app { transform-origin: 50% 50vh; animation: crt-on 0.55s ease-out; }
-@keyframes crt-on {
-  0% { transform: scale(1, 0.006); filter: brightness(4); }
-  55% { transform: scale(1, 1.02); filter: brightness(1.4); }
-  100% { transform: none; filter: none; }
+/* Then the dashboard switches on like an old television (animated by src/ui/tv.ts): a point of light,
+   a bright line, rolling amber static, then the picture. Above the dashboard, under the scanlines. */
+.tv { position: fixed; inset: 0; z-index: 96; overflow: hidden; background: #000; pointer-events: none; }
+.tv-noise { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; transform: scaleY(0); }
+.tv-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  background: #ffe2a0;
+  box-shadow: 0 0 10px 3px rgba(255, 176, 0, 0.85), 0 0 36px 10px rgba(255, 176, 0, 0.35);
+  transform: scaleX(0);
+}
+.tv-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 140px;
+  height: 140px;
+  margin: -70px 0 0 -70px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffaf0 0 4%, #ffe2a0 9%, rgba(255, 176, 0, 0.55) 22%, rgba(255, 176, 0, 0.12) 45%, transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+}
+/* The dot's horizontal flare. */
+.tv-dot::after {
+  content: '';
+  position: absolute;
+  left: -40vw;
+  right: -40vw;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 226, 160, 0.9) 50%, transparent);
+  filter: blur(1px);
 }
 @media (max-width: 700px) {
   .boot-main { flex-direction: column; gap: 10px; }
@@ -791,5 +823,4 @@ body.powering #app { transform-origin: 50% 50vh; animation: crt-on 0.55s ease-ou
   .boot-logo i.on { animation: none; opacity: 1; }
   .boot-bar i.hot, .boot.ready .boot-status { animation: none; }
   .boot.off { animation: none; opacity: 0; }
-  body.powering #app { animation: none; }
 }

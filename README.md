@@ -67,7 +67,8 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
   the Web Audio API from square and triangle waves and filtered noise, no audio files
 - **Boot screen**: opens on a "PRESS ANY KEY TO POWER ON" prompt (the press is what lets the browser play
   sound; [ START MUTED ] skips the sound, and muted visitors skip the prompt), then a pixel logo that flickers on, a spinning ASCII globe with satellites in orbit, a start-up log
-  and a chunky segmented loading bar, then a CRT switch-on into the dashboard. The five-second pacing is
+  and a chunky segmented loading bar, then the dashboard switches on like an old television: a point of light, a
+  bright line, rolling amber static and a flicker as the picture steadies. The five-second pacing is
   theatre, but every log line reports something real (this device, the catalogue that actually arrived,
   imagery tiles, news stories) and the bar can't finish until the satellite catalogue has really loaded.
   It has its own sounds: static as the logo lights, typewriter keys, a blip per [ OK ], a tick per bar segment
@@ -124,6 +125,7 @@ Chrome through Playwright (see `scripts/capture-readme.mjs`).
 | `src/ui/timeline.ts` | The 24-hour timeline under the clock, with pass marks |
 | `src/ui/sound.ts` | Synthesised terminal sounds (Web Audio) and the sound switch |
 | `src/ui/boot.ts` | The boot screen: pixel logo, ASCII globe, start-up log and loading bar |
+| `src/ui/tv.ts` | The television-style switch-on from the boot screen to the dashboard |
 | `src/terminal.ts` | Text-mode widgets: block bars, sparklines, event log, radar sweep |
 | `src/telemetry.ts` | Event log bus and timed fetches for link latency |
 | `test/` | Unit tests for the orbital maths (see Testing below) |

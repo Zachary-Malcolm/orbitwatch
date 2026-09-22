@@ -249,6 +249,29 @@ export const sfx = {
     tick(0, 0.1, 1, 160, 0.8);
     tone(70, 0, 0.5, { type: 'triangle', gain: 0.7, slideTo: 180 });
   },
+  /** A television's flyback whine as the picture tube lights: faint, high and brief. */
+  tvWhine() {
+    tone(3000, 0, 0.35, { type: 'sine', gain: 0.07, slideTo: 3400, ring: true });
+  },
+  /** A burst of television static that fades away over `dur` seconds. */
+  staticBurst(dur: number) {
+    const c = audio();
+    if (!c) return;
+    const t = c.currentTime;
+    const src = c.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    const band = c.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 1800;
+    band.Q.value = 0.4;
+    const env = c.createGain();
+    env.gain.setValueAtTime(0.9, t);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(band).connect(env).connect(master);
+    src.start(t, Math.random() * 0.4);
+    src.stop(t + dur + 0.02);
+  },
   /** Data received: a burst of 1200/2200 Hz tones, the Bell 202 modem signal. */
   modem() {
     if (!throttle('modem', 1500)) return;
