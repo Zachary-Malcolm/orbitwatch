@@ -6,17 +6,17 @@ import { $ } from './dom';
 // and home computers, and runs through one gentle low-pass filter so nothing is harsh: the audio
 // equivalent of the phosphor glow.
 //
-// On by default; the [♪] button in the status bar steps through HIGH → LOW → OFF, and the choice is
-// remembered in this browser only. Browsers only allow audio after the visitor has interacted with the page, so the
+// On by default at medium volume; the [♪] button in the status bar steps up through LOW → MED → HIGH
+// and then OFF, and the choice is remembered in this browser only. Browsers only allow audio after the visitor has interacted with the page, so the
 // audio engine starts on a click or key press and anything before that stays silent: the first sound
 // a visitor hears is their own first click. On iPhone the
 // ring/silent switch still mutes it, which is deliberate: the visitor's choice wins.
 
 const STORAGE_KEY = 'orbitwatch.sound';
 
-type Level = 'high' | 'low' | 'off';
-const VOLUME: Record<Level, number> = { high: 0.16, low: 0.06, off: 0 };
-const NEXT: Record<Level, Level> = { high: 'low', low: 'off', off: 'high' };
+type Level = 'off' | 'low' | 'med' | 'high';
+const VOLUME: Record<Level, number> = { off: 0, low: 0.045, med: 0.09, high: 0.16 };
+const NEXT: Record<Level, Level> = { off: 'low', low: 'med', med: 'high', high: 'off' };
 
 let level = loadLevel();
 let enabled = level !== 'off';
@@ -28,9 +28,9 @@ const lastPlayed = new Map<string, number>();
 function loadLevel(): Level {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === 'low' || saved === 'off' ? saved : 'high'; // 'on' (the old setting) means high
+    return saved === 'off' || saved === 'low' || saved === 'high' ? saved : 'med';
   } catch {
-    return 'high';
+    return 'med';
   }
 }
 
@@ -76,10 +76,12 @@ interface ToneOptions {
   gain?: number;
   /** Glide to this frequency over the tone. */
   slideTo?: number;
+  /** Fade away over the whole tone after a soft attack (a struck, ringing sound) instead of holding. */
+  ring?: boolean;
 }
 
 /** One enveloped note: `freq` Hz, starting `at` s from now, lasting `dur` s. */
-function tone(freq: number, at: number, dur: number, { type = 'square', gain = 1, slideTo }: ToneOptions = {}) {
+function tone(freq: number, at: number, dur: number, { type = 'square', gain = 1, slideTo, ring = false }: ToneOptions = {}) {
   const c = audio();
   if (!c) return;
   const t = c.currentTime + at;
@@ -89,8 +91,8 @@ function tone(freq: number, at: number, dur: number, { type = 'square', gain = 1
   if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
   const env = c.createGain();
   env.gain.setValueAtTime(0, t);
-  env.gain.linearRampToValueAtTime(gain, t + 0.004);
-  env.gain.setValueAtTime(gain, t + Math.max(0.005, dur - 0.015));
+  env.gain.linearRampToValueAtTime(gain, t + (ring ? 0.012 : 0.004));
+  if (!ring) env.gain.setValueAtTime(gain, t + Math.max(0.005, dur - 0.015));
   env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   osc.connect(env).connect(master);
   osc.start(t);
@@ -188,10 +190,14 @@ export const sfx = {
   countdown(step: number) {
     tone(880 + step * 55, 0, 0.04, { gain: 0.4 });
   },
-  /** The standby radar's sweep passing north: a soft sonar ping and its echo. */
+  /**
+   * The standby radar's sweep passing north: a low submarine-sonar ping. Pure sine waves (no harsh
+   * overtones) that ring away slowly with a faint echo, quiet enough to register without nagging.
+   */
   ping() {
-    tone(1175, 0, 0.5, { type: 'triangle', gain: 0.22 });
-    tone(1175, 0.2, 0.4, { type: 'triangle', gain: 0.07 });
+    tone(523, 0, 1.6, { type: 'sine', gain: 0.32, slideTo: 505, ring: true });
+    tone(262, 0, 1.0, { type: 'sine', gain: 0.12, ring: true });
+    tone(523, 0.42, 1.2, { type: 'sine', gain: 0.07, slideTo: 505, ring: true });
   },
   /** The locked target entering Earth's shadow (a low falling tone) or coming back into sunlight. */
   eclipse(entering: boolean) {
@@ -213,12 +219,17 @@ function isSwitchOn(el: Element): boolean {
 
 function renderButton() {
   const btn = $('sound-btn');
-  // Filled when sound is on; two notes for high, one for low.
-  btn.textContent = level === 'high' ? '[♪♪]' : '[♪]';
+  // Lit while sound is on, with a level bar (the same width at every level, for narrow status bars).
+  btn.textContent = { off: '[♪·]', low: '[♪▂]', med: '[♪▅]', high: '[♪█]' }[level];
   btn.classList.toggle('active', enabled);
   btn.setAttribute('aria-pressed', String(enabled));
   btn.setAttribute('aria-label', `Terminal sounds: ${level}`);
-  btn.title = { high: 'Sound: high (click for low)', low: 'Sound: low (click to mute)', off: 'Sound: off (click to turn on)' }[level];
+  btn.title = {
+    off: 'Sound: off (click for low)',
+    low: 'Sound: low (click for medium)',
+    med: 'Sound: medium (click for high)',
+    high: 'Sound: high (click to mute)',
+  }[level];
 }
 
 export function initSound() {

@@ -127,7 +127,7 @@ function render() {
       button('NOT NOW', () => close('later')),
       button("DON'T SHOW AGAIN", () => close('optout')),
     );
-    body.push(buttons, make('p', 'hint', `Reopen this guide any time with [?] at the top of the screen. Terminal sounds are ${soundLevel() === 'off' ? 'off; switch them on with [♪]' : 'on; [♪] turns them down or off'}.`));
+    body.push(buttons, make('p', 'hint', `Reopen this guide any time with [?] at the top of the screen. Terminal sounds are ${soundLevel() === 'off' ? 'off; switch them on with [♪]' : 'on; [♪] changes the volume or turns them off'}.`));
   } else {
     body.push(make('p', '', STEPS[step].text()));
     const last = step === STEPS.length - 1;

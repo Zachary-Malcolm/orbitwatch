@@ -587,7 +587,7 @@ p.loading::before { content: 'RETRIEVING BRIEFING ▒▒▒▒▒▒'; }
    buttons name themselves) and wrap onto a second line rather than clip on the very narrowest screens. */
 @media (max-width: 480px) {
   /* The status bar can't fit its UTC clock as well (the chrono panel shows the time). */
-  .statusbar { gap: 10px; }
+  .statusbar { gap: 8px; }
   .sb-utc { display: none; }
   .hud.tr { right: 12px; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: flex-end; }
   .hud.tr > span { display: none; }
