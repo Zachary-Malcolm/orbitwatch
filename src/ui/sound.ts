@@ -6,9 +6,10 @@ import { $ } from './dom';
 // and home computers, and runs through one gentle low-pass filter so nothing is harsh: the audio
 // equivalent of the phosphor glow.
 //
-// Off by default; the [♪] button in the status bar switches it on, and the choice is remembered in
-// this browser only. Browsers only allow audio after the visitor has interacted with the page, so the
-// audio engine starts on a click or key press and anything before that stays silent. On iPhone the
+// On by default; the [♪] button in the status bar mutes it, and the choice is remembered in this
+// browser only. Browsers only allow audio after the visitor has interacted with the page, so the
+// audio engine starts on a click or key press and anything before that stays silent: the first sound
+// a visitor hears is their own first click. On iPhone the
 // ring/silent switch still mutes it, which is deliberate: the visitor's choice wins.
 
 const STORAGE_KEY = 'orbitwatch.sound';
@@ -22,9 +23,9 @@ const lastPlayed = new Map<string, number>();
 
 function loadEnabled(): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'on';
+    return localStorage.getItem(STORAGE_KEY) !== 'off';
   } catch {
-    return false;
+    return true;
   }
 }
 

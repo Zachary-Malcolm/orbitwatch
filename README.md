@@ -59,7 +59,7 @@ the browser from live orbital data, presented as a 1980s amber-phosphor orbital 
 - **Timeline**: drag through the next 24 hours and watch everything move; the locked target's passes over the
   station are marked on it (brighter when visible to the naked eye), so you can drag straight to the next one.
   On phones it sits on the bottom of the globe, with a finger-sized handle, so the globe stays in view
-- **Terminal sounds** (off by default, `[♪]` to switch on): key clicks on every control, rising and falling blips
+- **Terminal sounds** (on after the first click, `[♪]` to mute): key clicks on every control, rising and falling blips
   for switches, a "target acquired" tone, AOS/LOS chimes as a satellite rises and sets over the station, an alarm
   at closest approach, a bell for breaking news and faint teletype chatter from the ticker. All synthesised live
   with the Web Audio API from square and triangle waves and filtered noise, no audio files

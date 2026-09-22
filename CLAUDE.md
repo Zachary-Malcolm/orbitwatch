@@ -47,7 +47,7 @@ without touching CelesTrak by pointing `PAGES_URL` / `CELESTRAK_URL` at a local 
   its own colour renders with alpha `PASSTHROUGH_ALPHA` and `NoBlending` (satellite glyphs, ground track,
   observer marker); near-pure red also passes through.
 - **Gauges show real measured data only**, never randomised values.
-- **Sound** (`src/ui/sound.ts`) is synthesised, off by default, and must stay retro: square/triangle waves and
+- **Sound** (`src/ui/sound.ts`) is synthesised, on by default (silent until the first click; `[♪]` mutes), and must stay retro: square/triangle waves and
   filtered noise through the warm low-pass. New interactive controls get a click automatically (document-level
   listener); add switches to the toggle selector there.
 - **Privacy:** the observer location stays in localStorage only. Never send it anywhere or put it in URLs.
